@@ -243,8 +243,10 @@ class Parser
             $turn++;
             if ($doras_map = $this->guardExplores()) {
                 // has the guard visited some positions before?
-                if ($nb_visited = $this->guardVisited($doras_map, dry_run: true)) {
-
+                $nb_updates = $this->guardVisited($doras_map, dry_run: true);
+                $nb_visited = count($doras_map) - $nb_updates;
+                if ($nb_visited) {
+                    echo sprintf('The guard has already visited %d places out of %d', $nb_visited, count($doras_map)), PHP_EOL;
                 }
                 // move guard
                 $goes_to = end($doras_map);
