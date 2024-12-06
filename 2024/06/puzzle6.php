@@ -261,8 +261,8 @@ class Parser
             }
         } while ($continue);
 
+        echo $this, str_repeat(PHP_EOL, 3);
         $this->display($nb_positions, $turn);
-        echo $this, PHP_EOL;
     }
 
     public function turnGuard(string $turn): void
