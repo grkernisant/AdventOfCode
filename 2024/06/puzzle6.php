@@ -189,23 +189,31 @@ class Parser
         echo sprintf('The guard has visited %d places in %d turns', $nb_places, $nb_turns), PHP_EOL;
     }
 
+    public function filterGuardHasVisited(array $positions, bool $visited): array
+    {
+        $self = $this;
+        return array_filter(
+            $positions,
+            function($p) use ($self, $visited) {
+                return $self->board->positions[$p->y][$p->x]->visited === $visited;
+            }
+        );
+    }
+
     public function guardExplores(): array {
         $gp = $this->guard->getPosition();
         $gd = $this->guard->getDirection();
         return $this->board->getPositionsFrom($gp, $gd);
     }
 
-    public function guardVisited(array $positions, bool $dry_run = false): int
+    public function markAsVisited(array $positions): int
     {
-        $updated = 0;
-        foreach($positions as $p) {
-            if ($this->board->positions[$p->y][$p->x]->visited === false) {
-                if (!$dry_run) $this->board->positions[$p->y][$p->x]->visited = true;
-                $updated++;
-            }
+        $not_visited = $this->filterGuardHasVisited($positions, false);
+        foreach($not_visited as $p) {
+            $this->board->positions[$p->y][$p->x]->visited = true;
         }
 
-        return $updated;
+        return count($not_visited);
     }
 
     public function map(int $y, string $line): void
@@ -243,16 +251,15 @@ class Parser
             $turn++;
             if ($doras_map = $this->guardExplores()) {
                 // has the guard visited some positions before?
-                $nb_updates = $this->guardVisited($doras_map, dry_run: true);
-                $nb_visited = count($doras_map) - $nb_updates;
-                if ($nb_visited) {
-                    echo sprintf('The guard has already visited %d places out of %d', $nb_visited, count($doras_map)), PHP_EOL;
+                $already_visited = $this->filterGuardHasVisited($doras_map, true);
+                if (count($already_visited) > 0) {
+                    echo sprintf('The guard has already visited %d places out of %d', count($already_visited), count($doras_map)), PHP_EOL;
                 }
                 // move guard
                 $goes_to = end($doras_map);
                 $this->moveGuardTo($goes_to);
                 // mark map as visited
-                $nb_positions+= $this->guardVisited($doras_map);
+                $nb_positions+= $this->markAsVisited($doras_map);
                 if (!$this->board->isBorder($goes_to)) {
                     $this->turnGuard(Direction::TURN_90_RIGHT);
                 } else {
