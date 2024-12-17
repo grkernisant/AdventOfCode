@@ -275,6 +275,8 @@ class Garden
         $this->findAllPlantSiblings();
         $this->findAllRegions();
         echo sprintf('The total price for fencing is: %d', $this->getPrice()), PHP_EOL;
+
+        $this->setRegionSides();
     }
 
     public function outOfBounds(Position $p): bool
@@ -283,19 +285,35 @@ class Garden
 
         return false;
     }
+
+    public function setRegionSides(): void
+    {
+        $this->sortRegionPlants();
+
+        foreach($this->regions as $k => $region) $region->setNbSides();
+    }
+
+    public function sortRegionPlants(): void
+    {
+        foreach($this->regions as $k => $region) {
+            usort($region->plants, [Region::class, 'sortByCoords']);
+        }
+    }
 }
 
 class Region
 {
     private int $area;
     private int $perimeter;
-    private array $plants;
+    public array $plants;
+    public int $nb_sides;
 
     public function __construct(public Plant $hpic)
     {
         $this->plants = array();
         $this->area = 0;
         $this->perimeter = 0;
+        $this->nb_sides = 0;
     }
 
     public function claimPlants(): bool
@@ -309,7 +327,6 @@ class Region
         $this->hpic->applyCertificate($cert);
         array_push($this->plants, $this->hpic);
         array_splice($this->plants, 1, 0, $this->hpic->getSiblings($cert));
-        // echo 'NB PLANTS: ', $this->getName(), ' ', count($this->plants), PHP_EOL;
 
         return true;
     }
@@ -342,9 +359,54 @@ class Region
         return $price;
     }
 
+    public function getNbSides(): int
+    {
+        return $this->nb_sides;
+    }
+
+    public function getPlantsPerRow(int $y): array
+    {
+        $plants_y = array_filter($this->plants, function($p) use ($y) {
+            return $p->pos->y === $y;
+        });
+
+        return $plants_y;
+    }
+
     public function setArea(): void
     {
         $this->area = count($this->plants);
+    }
+
+    public function setNbSides(): void
+    {
+        $min_y = reset($this->plants)->pos->y;
+        $max_y = end($this->plants)->pos->y;
+
+        // outer sides
+        $outer_boundaries = array();
+        $this->nb_sides = 3;
+        $plants_row = $this->getPlantsPerRow($min_y);
+        $outer_boundaries[] = (object) array('lower' => reset($plants_row), 'upper' => end($plants_row));
+        $prev_min_x = reset($plants_row)->pos->x;
+        $prev_max_x = end($plants_row)->pos->x;
+        $i = $min_y + 1;
+        while ($i <= $max_y) {
+            $plants_row = $this->getPlantsPerRow($i);
+            $outer_boundaries[] = (object) array('lower' => reset($plants_row), 'upper' => end($plants_row));
+            $min_x = reset($plants_row)->pos->x;
+            $max_x = end($plants_row)->pos->x;
+            if ($min_x !== $prev_min_x) $this->nb_sides+= 2;
+            if ($max_x !== $prev_max_x) $this->nb_sides+= 2;
+
+            $prev_min_x = $min_x;
+            $prev_max_x = $max_x;
+            $i++;
+        }
+        $this->nb_sides++;
+        echo sprintf('%s has %d outer sides', $this->hpic->getFullname(), $this->nb_sides), PHP_EOL;
+
+        // inner sides
     }
 
     public function setPerimeter(): void
@@ -353,6 +415,17 @@ class Region
             $acc+= $curr->getBorderCount();
             return $acc;
         }, 0);
+    }
+
+    static public function sortByCoords(Plant $a, Plant $b): int
+    {
+        if ($a->pos->y < $b->pos->y) return -1;
+        if ($a->pos->y > $b->pos->y) return 1;
+
+        if ($a->pos->x < $b->pos->x) return -1;
+        if ($a->pos->x > $b->pos->x) return 1;
+
+        return 0;
     }
 }
 
