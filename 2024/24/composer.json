@@ -1,0 +1,13 @@
+{
+    "name": "grkernisant/aoc2024day24",
+    "description": "Day 24 Crossed Wires",
+    "require": {
+        "symfony/event-dispatcher": "^7.2"
+    },
+    "authors": [
+        {
+            "name": "Guy-Robert Kernisant",
+            "email": "grkernisant@gmail.com"
+        }
+    ]
+}
