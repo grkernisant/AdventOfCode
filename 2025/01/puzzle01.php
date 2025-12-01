@@ -27,7 +27,7 @@ class Main
         $this->parseInstructions($this->parser->getInput());
         $this->rotate();
 
-        echo sprintf("The lock's dial has crossed '0' {$this->lock->zero_count} times"), PHP_EOL;
+        echo sprintf("The lock's password is {$this->lock->zero_count}"), PHP_EOL;
     }
 
     private function parseInstructions(array $instructions)
