@@ -97,7 +97,9 @@ class Lock
     public function rotate(Instruction $i)
     {
         $incr = $i->direction === Direction::R ? 1 : -1;
-        $this->dial = ($this->max + 1 + $this->dial + ($incr * $i->rotation)) % ($this->max + 1);
+        $this->dial = ($this->dial + ($incr * $i->rotation)) % ($this->max + 1);
+        if ($this->dial < $this->min) $this->dial+= $this->max + 1;
+
         $this->zero_count += ($this->dial === 0) ? 1 : 0;
         // echo sprintf("The dial is rotated $i to point at $this->dial"), PHP_EOL;
     }
