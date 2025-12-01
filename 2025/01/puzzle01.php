@@ -94,14 +94,36 @@ class Lock
 
     public function __construct(public int $dial, public $min = 0, public $max = 99) {}
 
+    public function __toString()
+    {
+        return substr('0' . $this->dial, -2);
+    }
+
     public function rotate(Instruction $i)
     {
         $incr = $i->direction === Direction::R ? 1 : -1;
+        $nb_passes_zero_amount = $this->getPassesZeroAmount($i);
+        $prev = $this->__toString();
         $this->dial = ($this->dial + ($incr * $i->rotation)) % ($this->max + 1);
         if ($this->dial < $this->min) $this->dial+= $this->max + 1;
 
         $this->zero_count += ($this->dial === 0) ? 1 : 0;
-        // echo sprintf("The dial is rotated $i to point at $this->dial"), PHP_EOL;
+        $this->zero_count += $nb_passes_zero_amount;
+        // echo sprintf("The dial $prev is rotated $i to point at $this and passed zero $nb_passes_zero_amount times"), PHP_EOL;
+    }
+
+    private function getPassesZeroAmount(Instruction $i): Int
+    {
+        // how many revolutions
+        $nb = (int) ($i->rotation / ($this->max+1));
+        // equivalent rotation
+        $incr = $i->direction === Direction::R ? 1 : -1;
+        $diff = $i->rotation % ($this->max + 1);
+        if ($this->dial === 0) return $nb;
+
+        $after = $this->dial + $incr * $diff;
+        $nb+= ($after < $this->min || $after > ($this->max+1)) ? 1 : 0;
+        return $nb;
     }
 }
 
