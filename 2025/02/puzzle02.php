@@ -55,11 +55,25 @@ class Main
                     $invalids,
                     count($invalids),
                     0,
-                    $product_range->filterInvalidProductIds()
+                    $product_range->filterInvalidProductIds(ProductRangeID::INVALID_PRODUCT_ID_DOUBLE)
                 );
             }
 
-            echo sprintf("The sum of invalid product ids is %d", array_sum($invalids)), PHP_EOL;
+            echo sprintf("The sum of double invalid product ids is %d", array_sum($invalids)), PHP_EOL;
+
+            // Part 2
+            $invalids = array();
+            $this->ranges = $this->parseRanges($this->parser->getInput());
+            foreach($this->ranges as $product_range) {
+                array_splice(
+                    $invalids,
+                    count($invalids),
+                    0,
+                    $product_range->filterInvalidProductIds(ProductRangeID::INVALID_PRODUCT_ID_REPEAT)
+                );
+            }
+
+            echo sprintf("The sum of repeatable invalid product ids is %d", array_sum($invalids)), PHP_EOL;
 
         } catch(Throwable $e) {}
     }
@@ -152,16 +166,17 @@ class Main
 class ProductRangeID
 {
     const DELIMITER = '-';
-    const INVALID_PRODUCT_ID = '/^((?i)\d+)\1$/';
+    const INVALID_PRODUCT_ID_DOUBLE = '/^((?i)\d+)\1$/';
+    const INVALID_PRODUCT_ID_REPEAT = '/^((?i)\d+)(\1)+$/';
 
     public function __construct(public int $min, public int $max) {
         if ($max < $min) throw new Error("Invalid Product Range ID: $min > $max, max must greater than min");
     }
 
-    public function filterInvalidProductIds(): array
+    public function filterInvalidProductIds(string $regex): array
     {
-        $invalid_product_ids = array_filter(range($this->min, $this->max), function($product_id) {
-            return preg_match(static::INVALID_PRODUCT_ID, (string) $product_id);
+        $invalid_product_ids = array_filter(range($this->min, $this->max), function($product_id) use ($regex) {
+            return preg_match($regex, (string) $product_id);
         });
 
         return $invalid_product_ids;
