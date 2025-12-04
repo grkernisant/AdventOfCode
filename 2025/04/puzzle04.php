@@ -49,10 +49,23 @@ class Main
             if ($this->test_mode) $this->runTest();
 
             // Part 1
-            echo sprintf("There are %d accessible toilet papers", $this->grid->getNbAccessible()), PHP_EOL;
+            echo sprintf("There are %d accessible toilet papers", $this->grid->getNbAccessibles()), PHP_EOL;
 
             // Part 2
+            $total_removed = 0;
+            Logger::log('positions-to-check', ''); // clear a new position to check logger
+            do {
+                $pos = array_shift($this->grid->queue);
+                $grid_position = $this->grid->getGridPosition($pos->x, $pos->y);
+                if ($grid_position && $grid_position->removeToiletPaper()) {
+                    $total_removed++;
+                    // add possible neighbors to queue
+                    $added_to_queue = $this->grid->addAccessibleNeighborsToQueue($grid_position);
+                    Logger::log('positions-to-check', sprintf("Found %d more positions to check", count($added_to_queue)), true);
+                }
+            } while(count($this->grid->queue)>0);
 
+            echo sprintf("We removed a total of %d toilet papers", $total_removed), PHP_EOL;
         } catch(Throwable $e) {}
     }
 
@@ -74,6 +87,7 @@ class Grid
     public int $cols;
     public int $rows;
     public array $grid;
+    public array $queue;
 
     public function __construct(array $g)
     {
@@ -92,7 +106,54 @@ class Grid
 
         // neighbors
         $this->setNeighbors();
+        // accessible
+        $this->setAccessible();
+        // queue
+        $this->queue = $this->getAccessiblePositions();
+    }
 
+    public function addAccessibleNeighborsToQueue(GridPosition $gp): array
+    {
+        $added = array();
+        $positions = $gp->getNeighborPositions();
+        foreach($positions as $p) {
+            $n = $this->getGridPosition($p->x, $p->y);
+            // update accessibility
+            $this->setAccessible($n);
+            // only add unique to queue
+            if ($n && $n->isAccessible() && static::find($this->queue, $n) === null) {
+                array_push($added, $p);
+                array_push($this->queue, $p);
+            }
+        }
+
+        return $added;
+    }
+
+    static public function find(array $haystack, Position $needle): ?Position
+    {
+        return array_find($haystack, function(Position $p) use($needle) {
+            return Position::compareEqual($p, $needle);
+        });
+    }
+
+    public function getAccessiblePositions(): array
+    {
+        $accessible_positions = array_reduce($this->grid, function($acc_total, $current_row) {
+            $accessible_row = array_reduce($current_row, function($row_accessibles, $item) {
+                if ($item->isAccessible()) {
+                    $p = new Position($item->x, $item->y);
+                    array_push($row_accessibles, $p);
+                }
+
+                return $row_accessibles;
+            }, array());
+            array_splice($acc_total, count($acc_total), 0, $accessible_row);
+
+            return $acc_total;
+        }, array());
+
+        return $accessible_positions;
     }
 
     public function getGridPosition(int $x, int $y): ?GridPosition
@@ -102,18 +163,9 @@ class Grid
         return $this->grid[$y][$x];
     }
 
-    public function getNbAccessible(): int
+    public function getNbAccessibles(): int
     {
-        $nb_accessible = array_reduce($this->grid, function($acc_total, $current_row) {
-            $nb_accessible_row = array_reduce($current_row, function($acc_subtotal, $current_grid_position) {
-                $acc_subtotal+= $current_grid_position->isAccessible() === true ? 1 : 0;
-                return $acc_subtotal;
-            }, 0);
-            $acc_total+= $nb_accessible_row;
-            return $acc_total;
-        }, 0);
-
-        return $nb_accessible;
+        return count($this->getAccessiblePositions());
     }
 
     public function inBound(int $x, int $y): bool
@@ -131,30 +183,61 @@ class Grid
         for($row = 0; $row < $this->rows; $row++) {
             for($col = 0; $col < $this->cols; $col++) {
                 $positions = array();
-                if ($this->grid[$row][$col]->hasToiletPaper()) {
-                    foreach ($range_y as $y) {
-                        foreach($range_x as $x) {
-                            $py = $row + $y;
-                            $px = $col + $x;
-                            if (($py !== $row || $px !== $col) && $this->inBound($px, $py)) {
-                                array_push($positions, new Position($px, $py));
-                            }
+                foreach ($range_y as $y) {
+                    foreach($range_x as $x) {
+                        $py = $row + $y;
+                        $px = $col + $x;
+                        if (($py !== $row || $px !== $col) && $this->inBound($px, $py)) {
+                            array_push($positions, new Position($px, $py));
                         }
                     }
-                    $this->grid[$row][$col]->setNeighborPositions($positions);
-                    $self = $this;
-                    $nb_busy_space = array_reduce($positions, function($acc, $curr) use ($self) {
-                        $grid_p = $self->getGridPosition($curr->x, $curr->y);
-                        $acc+= $grid_p->char === GridPosition::TOILET_PAPER ? 1 : 0;
-                        return $acc;
-                    }, 0);
-
-                    $this->grid[$row][$col]->setAccessible($nb_busy_space < GridPosition::TILES_FOR_ACCESS);
                 }
+                $this->grid[$row][$col]->setNeighborPositions($positions);
             }
         }
     }
 
+    private function setAccessible(?Position $p = null): void
+    {
+        if ($p !== null) {
+            $self = $this;
+            if ($this->grid[$p->y][$p->x]->hasToiletPaper()) {
+                $nb_busy_space = array_reduce($this->grid[$p->y][$p->x]->getNeighborPositions(), function($acc, $curr) use ($self) {
+                    $grid_p = $self->getGridPosition($curr->x, $curr->y);
+                    $acc+= $grid_p->char === GridPosition::TOILET_PAPER ? 1 : 0;
+                    return $acc;
+                }, 0);
+
+                $this->grid[$p->y][$p->x]->setAccessible($nb_busy_space < GridPosition::TILES_FOR_ACCESS);
+            } else {
+                $this->grid[$p->y][$p->x]->setAccessible(false);
+            }
+
+            return;
+        }
+
+        for($row = 0; $row < $this->rows; $row++) {
+            for($col = 0; $col < $this->cols; $col++) {
+                $p = new Position(x: $col, y: $row);
+                $this->setAccessible($p);
+            }
+        }
+    }
+}
+
+class Position
+{
+    public function __construct(public int $x, public int $y) {}
+
+    public function __toString(): string
+    {
+        return sprintf("Position(%d, %d)", $this->x, $this->y);
+    }
+
+    public static function compareEqual(Position $p1, Position $p2): bool
+    {
+        return $p1->x === $p2->x && $p1->y === $p2->y;
+    }
 }
 
 class GridPosition extends Position
@@ -172,11 +255,21 @@ class GridPosition extends Position
         $this->neighbor_positions = array();
     }
 
+    public function __toString(): String
+    {
+        return sprintf("GridPosition(%d, %d, %s)", $this->x, $this->y, $this->char ?: static::FLOOR);
+    }
+
     public static function fromChar(string $c): string
     {
         if ($c === static::TOILET_PAPER) return static::TOILET_PAPER;
 
         return static::FLOOR;
+    }
+
+    public function getNeighborPositions(): array
+    {
+        return $this->neighbor_positions;
     }
 
     public function hasToiletPaper(): bool
@@ -189,6 +282,18 @@ class GridPosition extends Position
         return $this->accessible;
     }
 
+    public function removeToiletPaper(): bool
+    {
+        if ($this->accessible && $this->char === static::TOILET_PAPER) {
+            $this->char = static::FLOOR;
+            $this->accessible = false;
+
+            return true;
+        }
+
+        return false;
+    }
+
     public function setAccessible(bool $accessible): void
     {
         $this->accessible = $accessible;
@@ -198,11 +303,6 @@ class GridPosition extends Position
     {
         $this->neighbor_positions = $positions;
     }
-}
-
-class Position
-{
-    public function __construct(public int $x, public int $y) {}
 }
 
 class Parser
