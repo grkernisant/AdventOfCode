@@ -60,7 +60,27 @@ function totalLocationDistance(locMap: LocationIDsMap, key1: string, key2: strin
     totalDistance.push(locationDistance(locMap[key1][n], locMap[key2][n]));
     n++;
   }
-  return totalDistance.reduce((acc, curr) => acc + curr, 0);
+
+  return arrayNumberSum(totalDistance);
+}
+
+function locationsSimilarityScore(locMap: LocationIDsMap, key1: string, key2: string): number {
+  const tot1 = checkLocationMap(locMap, key1, key2);
+  if (tot1 === 0) return 0;
+
+  const similarityDistance = [];
+  let n = 0;
+  while (n < tot1) {
+    const similarCount = locMap[key2].filter((e) => e === locMap[key1][n]).length;
+    similarityDistance.push(locMap[key1][n] * similarCount);
+    n++;
+  }
+
+  return arrayNumberSum(similarityDistance);
+}
+
+function arrayNumberSum(arr: number[]): number {
+  return arr.reduce((acc, curr) => acc + curr, 0);
 }
 
 const args = process.argv.slice(1);
@@ -68,3 +88,6 @@ const input = args[1] ?? 'test.txt';
 const sortedLocationIDsMap = parseLocationIDs(await readFileIfExists(input));
 const listTotalDistance = totalLocationDistance(sortedLocationIDsMap, "left", "right");
 console.log(`List total distance ${listTotalDistance}`);
+
+const locationSimilarityScore = locationsSimilarityScore(sortedLocationIDsMap, "left", "right");
+console.log(`List similarity score ${locationSimilarityScore}`);
