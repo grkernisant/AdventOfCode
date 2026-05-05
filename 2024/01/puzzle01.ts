@@ -39,7 +39,7 @@ function locationDistance(loc1: LocationID, loc2: LocationID): number {
   return Math.abs(loc2 - loc1);
 }
 
-function totalLocationDistance(locMap: LocationIDsMap, key1: string, key2: string): number {
+function checkLocationMap(locMap: LocationIDsMap, key1: string, key2: string): number {
   if (locMap[key1] === undefined) throw Error(`Missing key ${key1} on location map`);
   if (locMap[key2] === undefined) throw Error(`Missing key ${key2} on location map`);
 
@@ -47,6 +47,11 @@ function totalLocationDistance(locMap: LocationIDsMap, key1: string, key2: strin
   const tot2 = locMap[key1].length;
   if(tot1 !== tot2) throw Error(`Missing location IDs`);
 
+  return tot1;
+}
+
+function totalLocationDistance(locMap: LocationIDsMap, key1: string, key2: string): number {
+  const tot1 = checkLocationMap(locMap, key1, key2);
   if (tot1 === 0) return 0;
 
   const totalDistance = [];
@@ -58,8 +63,8 @@ function totalLocationDistance(locMap: LocationIDsMap, key1: string, key2: strin
   return totalDistance.reduce((acc, curr) => acc + curr, 0);
 }
 
-const args = process.argv.slice(1)
-const input = args[1] ?? 'test.txt'
+const args = process.argv.slice(1);
+const input = args[1] ?? 'test.txt';
 const sortedLocationIDsMap = parseLocationIDs(await readFileIfExists(input));
 const listTotalDistance = totalLocationDistance(sortedLocationIDsMap, "left", "right");
 console.log(`List total distance ${listTotalDistance}`);
