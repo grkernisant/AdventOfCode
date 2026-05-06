@@ -1,6 +1,9 @@
 input.txt
 input
 
+node_modules/
+package-lock.json
 vendor/
 *.log
 *.bak
+
