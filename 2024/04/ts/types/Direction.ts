@@ -1,0 +1,1 @@
+export type Direction = "E" | "NE" | "N" | "NW" | "W" | "SW" | "S" | "SE";
