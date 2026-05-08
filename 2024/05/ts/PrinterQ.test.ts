@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Printer } from './types/Printer.ts';
+import { Printer } from './types/PrinterQ.ts';
 
 describe('Advent of Code 2024 Day 5', () => {
   const mockInput = `47|53\n` +
