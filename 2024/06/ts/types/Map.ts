@@ -78,62 +78,6 @@ export class Map {
       // clear map
       this.tiles[y][x].char = '.';
     }
-
-    // const nextPosKey = this.guard.getVisitedKey(x, y);
-
-    // prevent guard from noticing
-    /*if (this.guardCanSee && !this.guard.canSee()) {
-      this.guardCanSee = false;
-    }
-
-    if (this.guardCanSee && !this.unsafeChecks.has(currPosKey)) {
-      this.unsafeChecks.add(currPosKey);
-    }*/
-
-    // as soon as we detect a loop
-    // we can start checking for loop blocks
-    // in subsequent runs
-    /*if (
-      !this.guardCanSee &&
-      !this.guard.trackingComplete &&
-      !this.unsafeChecks.has(currPosKey) &&
-      this.guard.visited.has(nextPosKey) &&
-      this.guard.getLastTrailType() === "move" &&
-      this.minIteration === -1
-      ) {
-      this.minIteration = this.guard.iteration + 1;
-    }*/
-
-    // run > 1
-    /*if (this.guard.trackingComplete && !this.unsafeChecks.has(currPosKey)) {
-      // if blocked guard turns right,
-      // check if that position and direction is in the trail already
-      const loopDir = this.guard.turnRight(this.guard.dir);
-      let n = 1;
-      let loopNextX: number;
-      let loopNextY: number;
-      let continueDoWhile: boolean = true;
-      const loopPositions: PositionWithDirection[] = [];
-
-      do {
-        loopNextX = this.guard.x + n * (DIRECTION_OFFSET.get(loopDir) as number[])[0];
-        loopNextY = this.guard.y + n * (DIRECTION_OFFSET.get(loopDir) as number[])[1];
-        continueDoWhile = !this.outOfBounds(loopNextX, loopNextY) && this.tiles[loopNextY][loopNextX].char === '.';
-        if (continueDoWhile) {
-          loopPositions.push({ x: loopNextX, y: loopNextY, dir: loopDir });
-        }
-
-        n++;
-      } while (continueDoWhile);
-
-      const onTrail = this.guard.trail.find((trail) => {
-        // return loopPositions.find((lp) => trail.x === lp.x && trail.y === lp.y && trail.dir === lp.dir);
-        return loopPositions.find((lp) => trail.x === lp.x && trail.y === lp.y);
-      });
-      if (onTrail) {
-        this.guard.addLoopBlock(x, y);
-      }
-    }*/
   }
 
   getTilesChar(x: number, y:number): string | undefined {
