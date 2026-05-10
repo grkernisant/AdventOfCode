@@ -73,7 +73,7 @@ class Equation
 
     public function solveWith(array $ops): bool
     {
-        $head = new EquationMember(number: 0, operator: EquationMember::OPERATOR_ADD, subtotal: 0);
+        $head = new EquationMember(number: 0, operator: EquationMember::OPERATOR_ADD);
         $nb = count($ops);
         foreach($this->numbers as $n) {
             foreach($ops as $op) {
@@ -138,15 +138,21 @@ class EquationMember
             );
             switch ($this->operator) {
                 case static::OPERATOR_ADD:
-                    $n->subtotal = $this->subtotal + $n->number;
+                    $n->subtotal = $this->subtotal !== null
+                        ? $this->subtotal + $n->number
+                        : $n->number;
                 break;
 
                 case static::OPERATOR_MULTIPLY:
-                    $n->subtotal = $this->subtotal * $n->number;
+                    $n->subtotal = $this->subtotal !== null
+                        ? $this->subtotal * $n->number
+                        : $n->number;
                 break;
 
                 case static::OPERATOR_CONCAT:
-                    $n->subtotal = (int) ((string) $this->subtotal . (string) $n->number);
+                    $n->subtotal = $this->subtotal !== null
+                        ? (int) ((string) $this->subtotal . (string) $n->number)
+                        : $n->number;
                 break;
             }
             array_push($this->children, $n);
