@@ -48,7 +48,7 @@ class Parser
         });
 
         echo sprintf('Part1: the total calibration result using 2 operators is %d', $calibration->part_1), PHP_EOL;
-        echo sprintf('%d equations were solved', count($this->equations) - count($unresolved)), str_repeat(PHP_EOL, 2);
+        echo sprintf('%d out of %d equations were solved', count($this->equations) - count($unresolved), count($this->equations)), str_repeat(PHP_EOL, 2);
 
         // part 2
         $nb_resolved = 0;
@@ -73,7 +73,7 @@ class Equation
 
     public function solveWith(array $ops): bool
     {
-        $head = new EquationMember(number: 0, operator: EquationMember::OPERATOR_ADD, subtotal: 0);
+        $head = new EquationMember(number: 0, operator: EquationMember::OPERATOR_ADD);
         $nb = count($ops);
         foreach($this->numbers as $n) {
             foreach($ops as $op) {
@@ -138,15 +138,21 @@ class EquationMember
             );
             switch ($this->operator) {
                 case static::OPERATOR_ADD:
-                    $n->subtotal = $this->subtotal + $n->number;
+                    $n->subtotal = $this->subtotal !== null
+                        ? $this->subtotal + $n->number
+                        : $n->number;
                 break;
 
                 case static::OPERATOR_MULTIPLY:
-                    $n->subtotal = $this->subtotal * $n->number;
+                    $n->subtotal = $this->subtotal !== null
+                        ? $this->subtotal * $n->number
+                        : $n->number;
                 break;
 
                 case static::OPERATOR_CONCAT:
-                    $n->subtotal = (int) ((string) $this->subtotal . (string) $n->number);
+                    $n->subtotal = $this->subtotal !== null
+                        ? (int) ((string) $this->subtotal . (string) $n->number)
+                        : $n->number;
                 break;
             }
             array_push($this->children, $n);
@@ -159,11 +165,11 @@ class EquationMember
 
     public function find(int $result): bool
     {
-        if ($this->subtotal === $result) return true;
+        $l = count($this->children);
+        if ($this->subtotal === $result && $l === 0) return true;
 
         $found = false;
         $i = 0;
-        $l = count($this->children);
         while ($i<$l && !$found) {
             $found = $this->children[$i]->find($result);
             $i++;
