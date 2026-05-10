@@ -165,11 +165,11 @@ class EquationMember
 
     public function find(int $result): bool
     {
-        if ($this->subtotal === $result) return true;
+        $l = count($this->children);
+        if ($this->subtotal === $result && $l === 0) return true;
 
         $found = false;
         $i = 0;
-        $l = count($this->children);
         while ($i<$l && !$found) {
             $found = $this->children[$i]->find($result);
             $i++;
