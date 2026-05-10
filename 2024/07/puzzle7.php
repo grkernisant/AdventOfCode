@@ -48,7 +48,7 @@ class Parser
         });
 
         echo sprintf('Part1: the total calibration result using 2 operators is %d', $calibration->part_1), PHP_EOL;
-        echo sprintf('%d equations were solved', count($this->equations) - count($unresolved)), str_repeat(PHP_EOL, 2);
+        echo sprintf('%d out of %d equations were solved', count($this->equations) - count($unresolved), count($this->equations)), str_repeat(PHP_EOL, 2);
 
         // part 2
         $nb_resolved = 0;
