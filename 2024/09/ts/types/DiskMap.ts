@@ -1,10 +1,9 @@
-import { MOVABLE_FILE_BLOCK_REGEX } from './index.ts';
-import type { Disk, File, FreeSpace } from './index.ts';
+import { File, FreeSpace } from './index.ts';
+import type { DiskBlock, SectorType } from './index.ts';
 
 export class DiskMap {
-  disk: Disk[];
+  disk: DiskBlock[];
   zipped: string;
-  unzipped: string;
 
   constructor(input: string) {
     this.disk = [];
@@ -13,28 +12,52 @@ export class DiskMap {
     this.init();
   }
 
-  defrag() {
-    let j = this.nextMovableFileBlock();
-    let i = this.nextFreeSpaceFrom(0);
+  checkFileAt(fileIndex: number) {
+    if (this.disk[fileIndex].type !== 'file') throw new Error(`NOT_FILE_BLOCK_TYPE: ${fileIndex}`);
+  }
 
-    while(i < j) {
-        // copy fileblock to freespace
-        this.unzipped = `${this.unzipped.split('').toSpliced(i, 1, this.unzipped[j]).join('')}`;
-        // pluck old value, creating free space
-        this.unzipped = `${this.unzipped.split('').toSpliced(j, 1, '.').join('')}`;
-        j = this.nextMovableFileBlock();
-        i = this.nextFreeSpaceFrom(i);
+  checkSpaceAt(spaceIndex: number) {
+    if (this.disk[spaceIndex].type !== 'space') throw new Error(`NOT_SPACE_BLOCK_TYPE: ${spaceIndex}`);
+  }
+
+  defrag(): DiskMap {
+    let i = this.getFirstAvailableFreeSpaceIndex();
+    let j = this.getFirstMovableFileBlockIndex();
+    while(i < j && i !== -1 && j !== -1) {
+      // swap file block with freespace block
+      this.swapBlock(j, i);
+      i = this.getFirstAvailableFreeSpaceIndex();
+      j = this.getFirstMovableFileBlockIndex();
     }
+
+    // clean up end
+    j = this.getFirstMovableFileBlockIndex();
+    if (j !== -1 && (j + 1) < this.disk.length && this.disk[j+1].type === 'space') {
+      const merged = this.disk.slice(j+1).reduce((acc, curr) => {
+        acc.blockSize+= curr.blockSize;
+        acc.count++;
+        return acc;
+      }, {blockSize: 0, count: 0});
+      this.disk.splice(j+1, merged.count, new FreeSpace(merged.blockSize));
+    }
+
+    return this;
   }
 
   getDiskChecksum(): number {
-    const cs = this.unzipped
-      .split('')
+    const j = this.getFirstMovableFileBlockIndex();
+    const cs = this.disk
+      .slice(0, j+1)
       .reduce((acc, curr) => {
-        if (!isNaN(curr)) {
-          acc.subtotal+= acc.index * Number(curr);
+        if (curr.type === 'file') {
+          let i = 0;
+          while(i < curr.blockSize) {
+            acc.subtotal+= acc.index * Number(curr.fileID);
+            acc.index++;
+
+            i++;
+          }
         }
-        acc.index++;
 
         return acc;
       }, {subtotal: 0, index: 0});
@@ -42,38 +65,199 @@ export class DiskMap {
     return cs.subtotal;
   }
 
-  init() {
-    this.unzipped = '';
+  getFiles(): File[] {
+    return this.disk.filter(e => e.type === 'file' as SectorType);
+  }
+
+  getFirstAvailableFreeSpaceIndex(): number {
+    return this.disk.findIndex(e => (e.type === 'space' as SectorType) &&  e.blockSize > 0);
+  }
+
+  getFirstMovableFileBlockIndex(): number {
+    return this.disk.findLastIndex((e => e.type === 'file' as SectorType));
+  }
+
+  getFreeSpace(): File[] {
+    return this.disk.filter(e => e.type === 'space' as SectorType);
+  }
+
+  init(): DiskMap {
     this.zipped
       .trim()
       .split('')
       .map((n, i) => {
         // file block
         if (i % 2 === 0) {
-          const filesize = Number(n);
+          const blockSize = Number(n);
           const fileID = Number(i/2);
-
-          this.unzipped+= String(fileID).repeat(filesize);
-          this.disk.push({ filesize, fileID });
+          this.disk.push(new File(blockSize, fileID));
         }
         // free space
         if (i % 2 === 1) {
-          const freeSpace = Number(n);
-
-          this.unzipped+= '.'.repeat(freeSpace);
-          this.disk.push(freeSpace);
+          const blockSize = Number(n);
+          this.disk.push(new FreeSpace(blockSize));
         }
       });
+
+    return this;
   }
 
-  nextFreeSpaceFrom(i: number): number {
-    return this.unzipped.indexOf('.', i);
+  mergeSpaces(srcIndex: number, dstIndex: number): DiskMap {
+    this.checkSpaceAt(srcIndex);
+    this.checkSpaceAt(dstIndex);
+
+    this.disk[dstIndex].blockSize+= this.disk[srcIndex].blockSize;
+    this.disk[srcIndex].blockSize = 0;
+
+    return this;
   }
 
-  nextMovableFileBlock(): number {
-    const matches = this.unzipped.match(MOVABLE_FILE_BLOCK_REGEX);
-    if (matches === null) throw new Error(`NO_AVAILABLE_MOVABLE_FILE_BLOCK`);
+  removeFileAt(fileIndex: number): DiskMap {
+    this.checkFileAt(fileIndex);
 
-    return matches.index;
+    if (fileIndex > 0) {
+      // increase space before file
+      this.disk[fileIndex-1].blockSize+= this.disk[fileIndex].blockSize;
+    }
+
+    if (fileIndex === 0 && this.disk.length > 2 && this.disk[1].type === 'space') {
+      this.disk[1].blockSize+= this.disk[fileIndex].blockSize;
+    }
+
+    this.disk.splice(fileIndex, 1);
+
+    return this;
+  }
+
+  swapBlock(srcIndex: number, dstIndex: number): DiskMap {
+    if (this.disk[srcIndex].type === 'file' && this.disk[dstIndex].type === 'file') {
+      return this.swapFileToFile(srcIndex, dstIndex);
+    }
+
+    if (this.disk[srcIndex].type === 'file' && this.disk[dstIndex].type === 'space') {
+      return this.swapFileToSpace(srcIndex, dstIndex);
+    }
+
+    if (this.disk[srcIndex].type === 'space' && this.disk[dstIndex].type === 'file') {
+      return this.swapFileToSpace(dstIndex, srcIndex);
+    }
+
+    if (this.disk[srcIndex].type === 'space' && this.disk[dstIndex].type === 'space') {
+      return this.swapSpaceToSpace(srcIndex, dstIndex);
+    }
+
+    return this;
+  }
+
+  swapFileToFile(fileSrcIndex: number, fileDstIndex: number): DiskMap {
+    this.checkFileAt(fileSrcIndex);
+    this.checkFileAt(fileDstIndex);
+
+    if (
+      this.disk[fileSrcIndex].blockSize !== this.disk[fileDstIndex].blockSize &&
+      this.disk[fileSrcIndex].fileID !== this.disk[fileDstIndex].fileID
+    ) {
+      const fileSrc = new File(this.disk[fileSrcIndex].blockSize, this.disk[fileSrcIndex].fileID);
+      const fileDst = new File(this.disk[fileDstIndex].blockSize, this.disk[fileDstIndex].fileID);
+
+      this.disk.splice(fileDstIndex, 1, fileSrc);
+      this.disk.splice(fileSrcIndex, 1, fileDst);
+    }
+
+    return this;
+  }
+
+  swapFileToSpace(fileIndex: number, spaceIndex: number): DiskMap {
+    this.checkFileAt(fileIndex);
+    this.checkSpaceAt(spaceIndex);
+
+    const fileBlock = this.disk[fileIndex];
+    const fileBlockSize = fileBlock.blockSize;
+    const fileID = fileBlock.fileID;
+    const spaceBlock = this.disk[spaceIndex];
+    const spaceBlockSize = spaceBlock.blockSize;
+
+    if (fileBlock.blockSize <= spaceBlock.blockSize) {
+      // move all the file blocks
+      if (fileIndex < spaceIndex) {
+        // move file blocks to reduced space
+        this.disk.splice(spaceIndex, 1, ...[
+          new FreeSpace(0),
+          new File(fileBlockSize, fileID),
+          new FreeSpace(spaceBlockSize - fileBlockSize)
+        ]);
+        // remove file and merge surrounding space
+        this.removeFileAt(fileIndex);
+      }
+
+      if (spaceIndex < fileIndex) {
+        // remove file and merge surrounding space
+        this.removeFileAt(fileIndex);
+        // move file blocks to space
+        this.disk.splice(spaceIndex, 1, ...[
+          new FreeSpace(0),
+          new File(fileBlockSize, fileID),
+          new FreeSpace(spaceBlockSize - fileBlockSize)
+        ]);
+      }
+    }
+
+    if (fileBlock.blockSize > spaceBlock.blockSize) {
+      // partial move
+      if (fileIndex < spaceIndex) {
+        // reduce file block size
+        this.disk[fileIndex].blockSize-= spaceBlockSize;
+        // move file blocks to space
+        this.disk.splice(spaceIndex, 1, ...[
+          new FreeSpace(0),
+          new File(spaceBlockSize, fileID),
+          new FreeSpace(0)
+        ]);
+      }
+
+      if (spaceIndex < fileIndex) {
+        // reduce file block size
+        this.disk[fileIndex].blockSize-= spaceBlockSize;
+        if (fileIndex < (this.disk.length - 1) && this.disk[fileIndex+1].type === 'space') {
+          this.disk[fileIndex+1].blockSize+= spaceBlockSize;
+        }
+
+        // move file blocks to space
+        this.disk.splice(spaceIndex, 1, ...[
+          new FreeSpace(0),
+          new File(spaceBlockSize, fileID),
+          new FreeSpace(0)
+        ]);
+      }
+    }
+
+    return this;
+  }
+
+  swapSpaceToSpace(spaceSrcIndex: number, spaceDstIndex: number): DiskMap {
+    this.checkSpaceAt(spaceSrcIndex);
+    this.checkSpaceAt(spaceDstIndex);
+
+    const spaceSrc = new FreeSpace(this.disk[spaceSrcIndex].blockSize);
+    const spaceDst = new FreeSpace(this.disk[spaceDstIndex].blockSize);
+
+    this.disk.splice(spaceDstIndex, 1, spaceSrc);
+    this.disk.splice(spaceSrcIndex, 1, spaceDst);
+
+    return this;
+  }
+
+  toString(): string {
+    return this.disk.reduce((acc, curr) => {
+      if (curr.type === 'file') {
+        const id = curr.fileID < 10 ? `${curr.fileID}` : `<${curr.fileID}>`;
+        acc+= id.repeat(curr.blockSize);
+      }
+      if (curr.type === 'space') {
+        acc+= '.'.repeat(curr.blockSize);
+      }
+
+      return acc;
+    }, '');
   }
 }
