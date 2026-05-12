@@ -49,14 +49,14 @@ export class DiskMap {
     const cs = this.disk
       .slice(0, j+1)
       .reduce((acc, curr) => {
-        if (curr.type === 'file') {
-          let i = 0;
-          while(i < curr.blockSize) {
+        let i = 0;
+        while(i < curr.blockSize) {
+          if (curr.type === 'file') {
             acc.subtotal+= acc.index * Number(curr.fileID);
-            acc.index++;
-
-            i++;
           }
+
+          acc.index++;
+          i++;
         }
 
         return acc;
@@ -77,7 +77,7 @@ export class DiskMap {
     return this.disk.findLastIndex((e => e.type === 'file' as SectorType));
   }
 
-  getFreeSpace(): File[] {
+  getFreeSpace(): FreeSpace[] {
     return this.disk.filter(e => e.type === 'space' as SectorType);
   }
 
@@ -108,6 +108,35 @@ export class DiskMap {
 
     this.disk[dstIndex].blockSize+= this.disk[srcIndex].blockSize;
     this.disk[srcIndex].blockSize = 0;
+
+    return this;
+  }
+
+  moveFiles(): DiskMap {
+    const j = this.getFirstMovableFileBlockIndex();
+    let currFileID = this.disk[j].fileID;
+    let currBlockSize: number;
+    let fileIndex: number;
+    let spaceIndex: number;
+
+    while (currFileID > 0) {
+      fileIndex  = this.disk.findLastIndex(f => f.type === 'file' && f.fileID === currFileID);
+      if (fileIndex === -1) {
+        currFileID--;
+        continue;
+      }
+
+      currBlockSize = this.disk[fileIndex].blockSize;
+      spaceIndex = this.disk.findIndex(s => s.type === 'space' && s.blockSize >= currBlockSize);
+      if (spaceIndex === -1 || spaceIndex > fileIndex) {
+        currFileID--;
+        continue;
+      }
+
+      this.swapFileToSpace(fileIndex, spaceIndex);
+
+      currFileID--;
+    }
 
     return this;
   }

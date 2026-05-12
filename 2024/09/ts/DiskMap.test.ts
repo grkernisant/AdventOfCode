@@ -35,6 +35,12 @@ describe('Advent of Code 2024 Day 9', () => {
     expect(cs).toBe(1928);
   });
 
+  it('Moves whole files correctly', () => {
+    const dm = new DiskMap(mockInput);
+    const cs = dm.moveFiles().getDiskChecksum();
+    expect(cs).toBe(2858);
+  });
+
   /*** extras ***/
   it('Swaps spaces correctly', () => {
     const dm = new DiskMap('12345');

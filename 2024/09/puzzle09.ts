@@ -7,3 +7,6 @@ const diskMapContent = await readFileIfExists(input);
 
 const diskMap = new DiskMap(diskMapContent ?? '');
 console.log(`The amphipod hard drive checksum is: ${diskMap.defrag().getDiskChecksum()}`);
+
+const diskMapMoved = new DiskMap(diskMapContent ?? '');
+console.log(`The amphipod hard drive checksum is: ${diskMapMoved.moveFiles().getDiskChecksum()}`);

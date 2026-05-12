@@ -8,4 +8,8 @@ export class FreeSpace implements Sector {
     this.blockSize = bs;
     this.type = 'space';
   }
+
+  toString(): string {
+    return `FreeSpace { blockSize: ${this.blockSize} }`;
+  }
 }

@@ -10,4 +10,8 @@ export class File implements Sector {
     this.fileID = id;
     this.type = 'file';
   }
+
+  toString(): string {
+    return `File { blockSize: ${this.blockSize}, fileID: ${this.fileID} }`;
+  }
 }
