@@ -1,0 +1,9 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "vitest": "^4.1.6"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
