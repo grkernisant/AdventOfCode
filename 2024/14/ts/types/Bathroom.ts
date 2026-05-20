@@ -73,13 +73,6 @@ export class Bathroom {
       for (let x = 0; x < this.cols; x++) {
         aligned = pos.filter(p => p.x === x);
         nb+= aligned.length >= isGrouped ? aligned.length : 0;
-        /*const l = aligned.length;
-        if (stats.maxAligned[x] <= l) {
-          stats.maxAligned[x] = l;
-          stats.t[x] = t;
-          if (!stats.freq.has(l)) stats.freq.set(l, 0);
-          stats.freq.set(l, stats.freq.get(l) + 1);
-        }*/
       }
       maxGroupedAligned[t] = nb;
       t++;
