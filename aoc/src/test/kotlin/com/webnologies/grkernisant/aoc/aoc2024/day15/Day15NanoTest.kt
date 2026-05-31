@@ -13,20 +13,20 @@ class Day15NanoTest {
     fun parseInput() {
         val parser = Parser(mockInput)
         // how many rows?
-        Assertions.assertEquals(7, parser.map.size)
+        Assertions.assertEquals(7, parser.surface.size)
         // how many cols?
-        Assertions.assertEquals(7, parser.map[0].size)
+        Assertions.assertEquals(7, parser.surface[0].size)
         // Robot Position
         Assertions.assertEquals(5, parser.robotPosition.x)
         Assertions.assertEquals(3, parser.robotPosition.y)
-        Assertions.assertEquals(MapTile.ROBOT, parser.map[3][5])
+        Assertions.assertEquals(MapTile.ROBOT, parser.surface[3][5])
         // Floor
-        Assertions.assertEquals(MapTile.FLOOR, parser.map[3][1])
+        Assertions.assertEquals(MapTile.FLOOR, parser.surface[3][1])
         // Boxes
         Assertions.assertEquals(3, parser.boxesPositions.size)
-        Assertions.assertEquals(MapTile.BOX, parser.map[3][3])
-        Assertions.assertEquals(MapTile.BOX, parser.map[3][4])
-        Assertions.assertEquals(MapTile.BOX, parser.map[4][3])
+        Assertions.assertEquals(MapTile.BOX, parser.surface[3][3])
+        Assertions.assertEquals(MapTile.BOX, parser.surface[3][4])
+        Assertions.assertEquals(MapTile.BOX, parser.surface[4][3])
         // Moves
         Assertions.assertEquals(11, parser.moves.size)
 

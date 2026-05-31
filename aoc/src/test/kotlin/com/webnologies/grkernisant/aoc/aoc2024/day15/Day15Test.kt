@@ -13,22 +13,22 @@ class Day15Test {
     fun parseInput() {
         val parser = Parser(mockInput)
         // how many rows?
-        Assertions.assertEquals(10, parser.map.size)
+        Assertions.assertEquals(10, parser.surface.size)
         // how many cols?
-        Assertions.assertEquals(10, parser.map[0].size)
+        Assertions.assertEquals(10, parser.surface[0].size)
         // Robot Position
         Assertions.assertEquals(4, parser.robotPosition.x)
         Assertions.assertEquals(4, parser.robotPosition.y)
-        Assertions.assertEquals(MapTile.ROBOT, parser.map[4][4])
+        Assertions.assertEquals(MapTile.ROBOT, parser.surface[4][4])
         // Floor
-        Assertions.assertEquals(MapTile.FLOOR, parser.map[4][5])
+        Assertions.assertEquals(MapTile.FLOOR, parser.surface[4][5])
         // Boxes
         Assertions.assertEquals(21, parser.boxesPositions.size)
-        Assertions.assertEquals(MapTile.BOX, parser.map[1][3])
-        Assertions.assertEquals(MapTile.BOX, parser.map[4][3])
+        Assertions.assertEquals(MapTile.BOX, parser.surface[1][3])
+        Assertions.assertEquals(MapTile.BOX, parser.surface[4][3])
         // Wall
-        Assertions.assertEquals(MapTile.WALL, parser.map[0][0])
-        Assertions.assertEquals(MapTile.WALL, parser.map[5][2])
+        Assertions.assertEquals(MapTile.WALL, parser.surface[0][0])
+        Assertions.assertEquals(MapTile.WALL, parser.surface[5][2])
         // Moves
         Assertions.assertEquals(700, parser.moves.size)
     }

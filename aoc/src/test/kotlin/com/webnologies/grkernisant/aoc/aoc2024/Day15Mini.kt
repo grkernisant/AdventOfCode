@@ -1,3 +1,3 @@
 package com.webnologies.grkernisant.aoc.aoc2024
 
-object Day15Mini : Day
+object Day15Mini : DayTest

@@ -1,7 +1,7 @@
 package com.webnologies.grkernisant.aoc.aoc2024.day15
 
 class Parser : ParserInterface {
-    lateinit var map: List<List<MapTile>>
+    lateinit var surface: List<List<MapTile>>
     lateinit var moves: List<RobotMove>
     lateinit var boxesPositions: List<Position>
     lateinit var robotPosition: Position
@@ -11,7 +11,7 @@ class Parser : ParserInterface {
     }
 
     override fun fetchBoxesPositions(): List<Position> { return this.boxesPositions }
-    override fun fetchMapTile(): List<List<MapTile>> { return this.map }
+    override fun fetchMapTile(): List<List<MapTile>> { return this.surface }
     override fun fetchMoves(): List<RobotMove> { return this.moves }
     override fun fetchRobotPosition(): Position { return this.robotPosition }
 
@@ -54,14 +54,14 @@ class Parser : ParserInterface {
             }
         }
 
-        this.map = parsedMap
+        this.surface = parsedMap
         this.moves = parsedMoves
         this.boxesPositions = parsedBoxesPositions
         this.robotPosition = parsedRobotPositions
     }
 
     override fun toString(): String {
-        val mapOutput = this.map.fold("") { acc, c ->
+        val mapOutput = this.surface.fold("") { acc, c ->
             acc + c.joinToString("") { c -> c.char.toString() } + "\n"
         }.trim()
         val movesOutput = this.moves.joinToString("") { m -> m.char.toString() }

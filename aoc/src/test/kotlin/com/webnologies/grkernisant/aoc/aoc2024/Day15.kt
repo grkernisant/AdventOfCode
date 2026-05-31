@@ -1,3 +1,3 @@
 package com.webnologies.grkernisant.aoc.aoc2024
 
-object Day15 : Day
+object Day15 : DayTest
