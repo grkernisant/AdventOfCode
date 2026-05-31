@@ -13,7 +13,7 @@ data class Parser2xWide(
 
     companion object {
         fun of(parser: Parser): Parser2xWide {
-            val parsedMap = parser.map.fold(mutableListOf<MutableList<MapTile>>(), { accRow, row ->
+            val parsedMap = parser.surface.fold(mutableListOf<MutableList<MapTile>>(), { accRow, row ->
                 val parsedRow = row.fold(mutableListOf<MapTile>()) { accCol, col ->
                     when(col.char) {
                         '#' -> {

@@ -5,13 +5,13 @@ import kotlin.collections.forEach
 typealias BoxIndexesPerAxisMap = MutableMap<Int, MutableSet<Int>>
 
 data class Warehouse(
-    val map: MutableList<MutableList<MapTile>>,
+    val surface: MutableList<MutableList<MapTile>>,
     var robot: Position,
     val moves: MutableList<RobotMove>,
     val boxes: MutableList<Position>
 ) {
-    val rows: Int = map.size
-    val cols: Int = map[0].size
+    val rows: Int = surface.size
+    val cols: Int = surface[0].size
     var canPushBoxCache: MutableMap<String, Boolean> = mutableMapOf()
 
     private fun canGroupMove(groupToMove: BoxIndexesPerAxisMap, dir: RobotMove): Boolean {
@@ -183,7 +183,7 @@ data class Warehouse(
     fun getCol(c: Int): List<MapTile> {
         if (this.outOfBounds(c, 0)) throw IllegalStateException("Out of bounds, column $c does not exist")
 
-        return this.map.fold(mutableListOf()) { acc, curr ->
+        return this.surface.fold(mutableListOf()) { acc, curr ->
             acc+= curr[c]
             acc
         }
@@ -218,13 +218,13 @@ data class Warehouse(
     fun getRow(r: Int): List<MapTile> {
         if (this.outOfBounds(0, r)) throw IllegalStateException("Out of bounds, row $r does not exist")
 
-        return this.map[r]
+        return this.surface[r]
     }
 
     private fun getTile(x: Int, y: Int): MapTile {
         if (this.outOfBounds(x, y)) throw IllegalArgumentException("Out of bounds tile($x, $y) does not exist)")
 
-        return this.map[y][x]
+        return this.surface[y][x]
     }
     private fun getTile(p: Position): MapTile { return this.getTile(p.x, p.y) }
 
@@ -268,14 +268,14 @@ data class Warehouse(
             for (y in 0..< currTile.area.height) {
                 copy.add(mutableListOf())
                 for (x in 0..< currTile.area.width) {
-                    copy[y].add(MapTile.of(this.map[currPos.y + y][currPos.x + x].char))
-                    this.map[currPos.y + y][currPos.x + x] = MapTile.FLOOR
+                    copy[y].add(MapTile.of(this.surface[currPos.y + y][currPos.x + x].char))
+                    this.surface[currPos.y + y][currPos.x + x] = MapTile.FLOOR
                 }
             }
             // move box
             for (y in 0..< currTile.area.height) {
                 for (x in 0..< currTile.area.width) {
-                    this.map[nextTilePos.y + y][nextTilePos.x + x] = copy[y][x]
+                    this.surface[nextTilePos.y + y][nextTilePos.x + x] = copy[y][x]
                 }
             }
             // update box position
@@ -321,8 +321,8 @@ data class Warehouse(
 
         // move robot
         if (this.hasFloor(nextTilePos)) {
-            this.map[this.robot.y][this.robot.x] = MapTile.FLOOR
-            this.map[nextTilePos.y][nextTilePos.x] = MapTile.ROBOT
+            this.surface[this.robot.y][this.robot.x] = MapTile.FLOOR
+            this.surface[nextTilePos.y][nextTilePos.x] = MapTile.ROBOT
             this.robot = nextTilePos
         }
     }
@@ -338,7 +338,7 @@ data class Warehouse(
     }
 
     override fun toString(): String {
-        return this.map.fold("") { acc, c ->
+        return this.surface.fold("") { acc, c ->
             acc + c.joinToString("") { c -> c.char.toString() } + "\n"
         }.trim()
     }
@@ -346,7 +346,7 @@ data class Warehouse(
     companion object {
         fun of(parser: ParserInterface): Warehouse =
             Warehouse(
-                map = parser.fetchMapTile().map { row ->
+                surface = parser.fetchMapTile().map { row ->
                     row.toMutableList()
                 }.toMutableList(),
                 robot = Position(x = parser.fetchRobotPosition().x, y = parser.fetchRobotPosition().y),

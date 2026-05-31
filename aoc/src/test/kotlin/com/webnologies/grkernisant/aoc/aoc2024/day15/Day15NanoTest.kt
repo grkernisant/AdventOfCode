@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
-class Day15NanoTest {
+class DayTest15NanoTest {
     val mockInput = Day15Nano.readInput()
 
     @Test
