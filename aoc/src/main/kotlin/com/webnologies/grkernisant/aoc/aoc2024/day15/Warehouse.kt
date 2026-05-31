@@ -200,7 +200,6 @@ data class Warehouse(
     }
 
     private fun getVisionFrom(p: Position, dir: RobotMove): List<MapTile> {
-        val currentTile = this.getTile(p)
         return when(dir) {
             RobotMove.LEFT -> this.getRow(p.y)
                 .slice(IntRange(0, p.x - 1))
