@@ -6,8 +6,13 @@ data class PositionWithDirection(
     override val x: Int,
     override val y: Int,
     val d: Direction,
-    val score: Int
+    val score: Int? = null,
+    val prev: String = "",
 ) : PositionInterface {
+    fun safeScore(): Int {
+        return score ?: 0
+    }
+
     fun toKey(): String {
         return "(${x},${y})"
     }
@@ -17,19 +22,30 @@ data class PositionWithDirection(
     }
 
     fun toScoreKey(): String {
-        return "(${x},${y},${score})$d"
+        return "$prev$d(${x},${y},${score})"
     }
 
     companion object {
-        val SCORE_KEY_REGEX = Regex("^\\((\\d+),(\\d+),(\\d+)\\)(LEFT|UP|RIGHT|DOWN)$")
+        val DIRECTION_KEY_REGEX = Regex("^\\((\\d+),(\\d+)\\)(LEFT|UP|RIGHT|DOWN)$")
+        val SCORE_KEY_REGEX = Regex("^(\\(\\d+,\\d+\\))(LEFT|UP|RIGHT|DOWN)\\((\\d+),(\\d+),(\\d+)\\)$")
         fun of (str: String): PositionWithDirection {
-            val matches = SCORE_KEY_REGEX.matchEntire(str)
-            if (matches != null) {
+            val matchesScore = SCORE_KEY_REGEX.matchEntire(str)
+            if (matchesScore != null) {
                 return PositionWithDirection(
-                    x = matches.groupValues[1].toInt(),
-                    y = matches.groupValues[2].toInt(),
-                    score = matches.groupValues[3].toInt(),
-                    d = Direction.valueOf(matches.groupValues[4])
+                    x = matchesScore.groupValues[3].toInt(),
+                    y = matchesScore.groupValues[4].toInt(),
+                    score = matchesScore.groupValues[5].toInt(),
+                    d = Direction.valueOf(matchesScore.groupValues[2]),
+                    prev = matchesScore.groupValues[1]
+                )
+            }
+
+            val matchesDirection = DIRECTION_KEY_REGEX.matchEntire(str)
+            if (matchesDirection != null) {
+                return PositionWithDirection(
+                    x = matchesDirection.groupValues[1].toInt(),
+                    y = matchesDirection.groupValues[2].toInt(),
+                    d = Direction.valueOf(matchesDirection.groupValues[3]),
                 )
             }
 
@@ -50,6 +66,7 @@ fun Direction.getPositionWithDirection(p: PositionWithDirection, delta: Int = 0)
         x = p.x + nextDirection.offset.first,
         y = p.y + nextDirection.offset.second,
         d = nextDirection,
-        score = p.score + deltaScore
+        score = deltaScore + (p.score ?: 0),
+        prev = p.toKey()
     )
 }

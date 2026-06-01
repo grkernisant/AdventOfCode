@@ -17,6 +17,9 @@ enum class Direction(
         return Direction.entries[nextOffset]
     }
 
+    fun rotateLeft(): Direction = this.getNextDirection(-1)
+    fun rotateRight(): Direction = this.getNextDirection(1)
+
     companion object {
         fun of(facing: Char): Direction =
             Direction.entries.find { it.facing == facing } ?: throw IllegalArgumentException("Unknown facing: $facing")

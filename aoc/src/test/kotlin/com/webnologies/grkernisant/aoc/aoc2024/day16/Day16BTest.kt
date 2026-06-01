@@ -24,4 +24,14 @@ class Day16BTest {
         maze.initExplore()
         Assertions.assertEquals(11048, maze.getDistanceEnd())
     }
+
+    @Test
+    @DisplayName("counts accurate nb of best path places")
+    fun findNbBestPaths() {
+        val parser = Parser(mockInput)
+        val maze = Maze.of(parser)
+        maze.initExplore()
+
+        Assertions.assertEquals(64, maze.getNbOnBestPaths())
+    }
 }
