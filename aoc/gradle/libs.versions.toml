@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.31"
+kotlin = "2.3.21"
 junit = "6.0.3"
 
 [libraries]
@@ -9,4 +9,4 @@ org-junit-jupiter-junit-jupiter-engine = { module = "org.junit.jupiter:junit-jup
 org-junit-platform-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 [plugins]
-kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
