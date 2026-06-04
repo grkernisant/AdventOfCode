@@ -3,7 +3,7 @@ package com.webnologies.grkernisant.aoc.aoc2024
 import kotlin.system.measureTimeMillis
 
 fun main() {
-    val day = Day16
+    val day = Day17
 
     val input = day.readInput()
     println("--- ${day::class.simpleName} ---")
