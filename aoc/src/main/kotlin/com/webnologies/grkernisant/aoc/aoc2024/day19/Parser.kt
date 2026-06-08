@@ -40,16 +40,8 @@ class Parser : OnsenInterface {
                 val regex = Regex(currentTowel.getPatternRegex(patterns))
                 if (regex.matches(currentTowel.pattern)) {
                     currentTowel.canDesign = true
-                    /*val blocks = patterns.mapNotNull { pattern ->
-                        val isPatternTooLong = pattern.pattern.length > currentTowel.pattern.length
-                        val isPatternInTowel = currentTowel.pattern.indexOf(pattern.pattern) > -1
-                        if (isPatternTooLong || !isPatternInTowel) return@mapNotNull null
-
-                        pattern.pattern
-                    }
-                    currentTowel.setBlocks(blocks)*/
                 } else {
-                    currentTowel.nbCombo = 0
+                    currentTowel.nbCombo = 0L
                 }
 
                 t+= currentTowel

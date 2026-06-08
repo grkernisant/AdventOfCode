@@ -3,7 +3,7 @@ package com.webnologies.grkernisant.aoc.aoc2024.day19
 interface PatternInterface {
     val pattern: String
     val blocks: MutableSet<String>
-    var nbCombo: Int
+    var nbCombo: Long
     val sets: MutableSet<String>
 
     fun buildSets(blocks: List<String>, pattern: String, currentSets: List<MutableSet<String>>) {
@@ -14,7 +14,7 @@ interface PatternInterface {
             // patterns count as 1 set
             // where as towels do not
             val offset  = if(this.javaClass.simpleName == "TowelPattern") 1 else 0
-            nbCombo = offset + this.sets.size
+            nbCombo = (offset + this.sets.size).toLong()
             return
         }
 

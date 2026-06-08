@@ -18,8 +18,7 @@ data class Onsen (
                     if (towel.pattern.indexOf(p.pattern) == -1) return@mapNotNull null
                     p
                 }.sortedByDescending { it.pattern.length }
-//            towel.setBlocks(patternsFiltered.map { it.pattern })
-            towel.nbCombo = 0
+            towel.nbCombo = 0L
             towel.blocks.clear()
             towel.blocks.addAll(patternsFiltered.map { it.pattern })
             towel.countSets(
