@@ -35,34 +35,23 @@ interface PatternInterface {
     }
 
     fun countSets(towelPatterns: List<TowelPattern>, pattern: String, currentSets: Int) {
-        if (currentSets == 0) {
-            nbCombo = 0
-            return
-        }
+        val n = pattern.length
+        val matches: MutableList<Long> = MutableList(n + 1) { 0L }
+        matches[0] = currentSets.toLong()
 
-        if (pattern.isEmpty()) {
-            nbCombo+= currentSets
-            return
-        }
+        for (i in 0 until n) {
+            val ways = matches[i]
+            if (ways == 0L) continue
 
-        val regex = Regex(getPatternRegex(towelPatterns))
-        val matchedPatterns: MutableList<TowelPattern> = mutableListOf()
-        towelPatterns.forEach  { towelP ->
-            val regexPattern = Regex("^(${towelP.pattern})")
-            val matches = regexPattern.find(pattern)
-            if (matches != null) {
-                val newPattern = pattern.substring(matches.groupValues[1].length)
-                if (newPattern.isEmpty() || regex.matchEntire(newPattern) != null) {
-                    matchedPatterns.add(towelP)
+            for (towelP in towelPatterns) {
+                val len = towelP.pattern.length
+                if (i + len <= n && pattern.startsWith(towelP.pattern, i)) {
+                    matches[i + len] += ways
                 }
             }
         }
 
-        matchedPatterns.forEach { matchedP ->
-            val newPattern = pattern.substring(matchedP.pattern.length)
-            val nbSets = if (newPattern.isNotEmpty()) currentSets * matchedPatterns.size else 1
-            countSets(towelPatterns, newPattern, nbSets)
-        }
+        nbCombo = matches[n]
     }
 
     fun setBlocks(b: List<String>) {
