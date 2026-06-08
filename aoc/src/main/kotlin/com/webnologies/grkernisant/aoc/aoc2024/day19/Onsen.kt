@@ -26,7 +26,6 @@ data class Onsen (
                 pattern = towel.pattern,
                 currentSets = 1,
             )
-            println("${towelIndex++}: ${towel.nbCombo.toULong()}")
             val newAcc = acc + towel.nbCombo.toULong()
             newAcc
         }
