@@ -10,6 +10,7 @@ object Day19 : Day {
     }
 
     override fun part2(input: List<String>): Any {
-        return 0
+        val onsen = Onsen.of(Parser(input))
+        return onsen.getCombinationCount()
     }
 }
