@@ -91,8 +91,10 @@ data class RaceTrack (
         for(y in rStart..rMax) {
             for(x in rStart..rMax) {
                 val distance = abs(y) + abs(x)
-                if (distance < rSkip.second || distance > rMax || outOfBounds(x, y)) continue
-                pList.add(PositionWithDistance(x, y, distance))
+                val newX = p.x + x
+                val newY = p.y + y
+                if (distance < rSkip.second || distance > rMax || outOfBounds(newX, newY)) continue
+                pList.add(PositionWithDistance(newX, newY, distance))
             }
         }
 

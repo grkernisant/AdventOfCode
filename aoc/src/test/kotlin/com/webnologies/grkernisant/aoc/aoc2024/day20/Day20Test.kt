@@ -63,7 +63,7 @@ class Day20Test {
         val rt = RaceTrack.of(parser)
         val neighbors = rt.getCircularNeighbors(rt.start, 2..20)
         val distance2 = neighbors.filter { n -> n.distance == 2 }
-        Assertions.assertEquals(3, distance2.size)
+        Assertions.assertEquals(7, distance2.size)
     }
 
     @Test
