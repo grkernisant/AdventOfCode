@@ -9,7 +9,7 @@ data class DirectionVector(
     val distance: Int
 ) {
     fun toVectorKey(): String =
-        "${start.toPositionKey("(", ")")}x$distance$direction"
+        "${start.toPositionKey("(", ")")}-${distance}->${end.toPositionKey("(", ")")}"
 
     companion object {
         fun of(src: PositionInterface, dst: PositionInterface): DirectionVector? {
