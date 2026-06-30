@@ -12,6 +12,9 @@ object Day21 : Day {
     }
 
     override fun part2(input: List<String>): Any {
-        return 0
+        val parser = Parser(input)
+        val ship = Ship.of(parser)
+        ship.init(26)
+        return ship.getComplexitySum()
     }
 }
