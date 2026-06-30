@@ -17,26 +17,13 @@ data class Ship (
         '<' to Pair(0, 1), 'v' to Pair(1, 1), '>' to Pair(2, 1)
     )
     private val directionalGap = Pair(0, 0)
-    var shortestSequences: MutableMap<String, List<Button>> = mutableMapOf()
+    var shortestSequenceLengths: MutableMap<String, Long> = mutableMapOf()
     private val vPathScore = mutableMapOf<CacheKey, Long>()
-    private val vPathCache = mutableMapOf<CacheKey, String>()
 
-    // align with A
-    fun getComplexity(): List<Pair<Int, Int>> {
-        val complexity = mutableListOf<Pair<Int, Int>>()
-        shortestSequences.forEach { (key, sequence) ->
-            val numPart = key.substring(0, 3).toInt()
-            val seqLength = sequence.size
-            complexity+= Pair(seqLength, numPart)
-        }
-
-        return complexity
-    }
-
-    fun getComplexitySum(): Int {
-        return getComplexity().fold(0) { acc, curr ->
-            val newAcc = acc + curr.first * curr.second
-            newAcc
+    fun getComplexitySum(): Long {
+        return shortestSequenceLengths.entries.fold(0L) { acc, entry ->
+            val numPart = entry.key.substring(0, 3).toLong()
+            acc + entry.value * numPart
         }
     }
 
@@ -70,55 +57,14 @@ data class Ship (
         return minCost
     }
 
-    private fun getOptimalPath(start: Char, end: Char, level: Int, depth: Int): String {
-        val key = CacheKey(start, end, level)
-        if (vPathCache.containsKey(key)) {
-            return vPathCache[key]!!
-        }
-
-        if (level == 0) {
-            return ""
-        }
-
-        val isNumeric = (level == depth)
-        val paths = getValidPaths(start, end, isNumeric)
-
-        var minCost = Long.MAX_VALUE
-        var bestPath = ""
-
-        for (path in paths) {
-            var pathCost = 0L
-            var current = 'A'
-            for (char in path) {
-                pathCost += getCost(current, char, level - 1, depth)
-                current = char
-            }
-            if (pathCost < minCost) {
-                minCost = pathCost
-                bestPath = path
-            }
-        }
-
-        val sb = StringBuilder()
-        var current = 'A'
-        for (char in bestPath) {
-            sb.append(getOptimalPath(current, char, level - 1, depth))
-            current = char
-        }
-
-        val result = if (level == 1) bestPath else sb.toString()
-        vPathCache[key] = result
-        return result
-    }
-
-    private fun getOptimalSequenceForKeyCode(codeStr: String, depth: Int): List<Button> {
-        val sb = StringBuilder()
+    private fun getSequenceLength(codeStr: String, depth: Int): Long {
+        var totalCost = 0L
         var current = 'A'
         for (char in codeStr) {
-            sb.append(getOptimalPath(current, char, depth, depth))
+            totalCost += getCost(current, char, depth, depth)
             current = char
         }
-        return sb.toString().map { Button.of(it) }
+        return totalCost
     }
 
     private fun getValidPaths(startChar: Char, endChar: Char, isNumeric: Boolean): List<String> {
@@ -166,7 +112,7 @@ data class Ship (
 
         codes.forEach { code ->
             val codeStr = code.toString()
-            shortestSequences[codeStr] = getOptimalSequenceForKeyCode(codeStr, depth)
+            shortestSequenceLengths[codeStr] = getSequenceLength(codeStr, depth)
         }
     }
 
