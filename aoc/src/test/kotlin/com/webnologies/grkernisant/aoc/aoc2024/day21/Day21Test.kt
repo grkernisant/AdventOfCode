@@ -23,21 +23,20 @@ class Day21Test {
     @Test
     @DisplayName("Processes a keycode and its complexity")
     fun processKeyCodesComplexity() {
-        val expectedComplexity = listOf<String>(
-            "68 * 29",
-            "60 * 980",
-            "68 * 179",
-            "64 * 456",
-            "64 * 379",
+        val expectedLengths = mapOf(
+            "029A" to 68L,
+            "980A" to 60L,
+            "179A" to 68L,
+            "456A" to 64L,
+            "379A" to 64L,
         )
         val parser = Parser(mockInput)
         val ship = Ship.of(parser)
         ship.init()
-        val complexity = ship.getComplexity()
-        complexity.forEachIndexed { index, comp ->
-            Assertions.assertEquals(expectedComplexity[index], "${comp.first} * ${comp.second}")
+        expectedLengths.forEach { (code, expectedLength) ->
+            Assertions.assertEquals(expectedLength, ship.shortestSequenceLengths[code], "Length mismatch for $code")
         }
 
-        Assertions.assertEquals(126384, ship.getComplexitySum())
+        Assertions.assertEquals(126384L, ship.getComplexitySum())
     }
 }
