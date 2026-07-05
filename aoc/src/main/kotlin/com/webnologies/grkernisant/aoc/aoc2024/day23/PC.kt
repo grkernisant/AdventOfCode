@@ -1,0 +1,19 @@
+package com.webnologies.grkernisant.aoc.aoc2024.day23
+
+data class PC(val name: String) {
+    val connections: MutableSet<String> = mutableSetOf()
+    val longestLAN: Set<String>
+        get() = findLongestLAN()
+
+    fun addConnection(connection: PC) {
+        connections.add(connection.name)
+    }
+
+    fun findLongestLAN(): Set<String> {
+        return connections
+            .plus(name)
+            .toList()
+            .sorted()
+            .toSet()
+    }
+}
