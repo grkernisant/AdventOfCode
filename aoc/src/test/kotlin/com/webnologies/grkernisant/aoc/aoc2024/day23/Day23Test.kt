@@ -39,7 +39,7 @@ class Day23Test {
             .split("\n")
             .filter { it.isNotEmpty() }
         val input = Day23.readInput()
-        val lanParty = LanParty(input, true)
+        val lanParty = LanParty(input, false)
         val result = lanParty.getLANofSize(3)
 
         Assertions.assertEquals(
@@ -65,5 +65,20 @@ class Day23Test {
                 "$lan with T NOT FOUND"
             )
         }
+    }
+
+    @Test
+    @DisplayName("largest All PC connected LAN password is co,de,ka,ta")
+    fun findLargestAllConnectedLAN() {
+        val input = Day23.readInput()
+        val lanParty = LanParty(input, false)
+        val pwd = lanParty.getLongestPassword()
+        val expectedPW = "co,de,ka,ta"
+
+        Assertions.assertEquals(
+            expectedPW,
+            pwd,
+            "Longest Password does not match $pwd"
+        )
     }
 }

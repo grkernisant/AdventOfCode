@@ -72,6 +72,20 @@ class LanParty {
         newSets.forEach { ns -> networks.add(ns) }
     }
 
+    fun allConnected(lan: Set<String>): Boolean {
+        val allConnected = lan.all { name ->
+            val pc = computers[name]
+            if (pc != null) {
+                val others = lan.minus(name)
+                val connectedToAll = others.all { o -> pc.connections.contains(o) }
+                if (connectedToAll) return@all true
+            }
+            false
+        }
+
+        return allConnected
+    }
+
     fun addLan(names: Set<String>) {
         val newSet = names.toList().sorted().joinToString(",") { it }
         localAreaNetworks.add(newSet)
@@ -121,12 +135,26 @@ class LanParty {
             .sorted()
     }
 
-    fun getMaxConnections(): Int {
-        var nb = 0
+    fun getLongestPassword(): String {
+        val longestPasswords = mutableListOf<Set<String>>()
         computers.entries.forEach { (name, pc) ->
-            nb = max(nb, pc.connections.size)
+            val others = pc.connections.mapNotNull { name -> computers[name] }
+            val ll = others.fold(setOf<String>()) { acc, curr ->
+                val commonLAN = pc.longestLAN.intersect(curr.longestLAN)
+                val newAcc = if (commonLAN.size > acc.size) commonLAN else acc
+                newAcc
+            }
+            if (allConnected(ll)) longestPasswords.add(ll)
         }
 
-        return nb
+        var lp = ""
+        longestPasswords
+            .toSet()
+            .forEach { pwdSet ->
+                val pwdStr = pwdSet.joinToString(",")
+                lp = if (pwdStr.length > lp.length) pwdStr else lp
+            }
+
+        return lp
     }
 }

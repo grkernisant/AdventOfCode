@@ -11,6 +11,8 @@ object Day23 : Day {
     }
 
     override fun part2(input: List<String>): Any {
-        return 0
+        val lanParty = LanParty(input, false)
+        val pwd = lanParty.getLongestPassword()
+        return pwd
     }
 }
