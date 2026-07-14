@@ -6,7 +6,24 @@ data class Gate(
     val gateOperator: GateOperator,
     var ready: Boolean = false,
     var wireContainer: WireContainerInterface? = null
-) {
+) : EquationInterface {
+    fun checkOpWithStrings(ps: Pair<String, String>, go: GateOperator): Boolean {
+        return checkOp(Pair(Wire(ps.first), Wire(ps.second)), go)
+    }
+
+    fun checkOp(pw: Pair<Wire, Wire>, go: GateOperator): Boolean {
+        if (go.name != gateOperator.name) return false
+
+        val ours = getSortedWirePairNames(inputs)
+        val against = getSortedWirePairNames(pw)
+        return ours == against
+    }
+
+    private fun getSortedWirePairNames(p: Pair<Wire, Wire>): String =
+        listOf(p.first.name, p.second.name)
+            .sorted()
+            .joinToString(",")
+
     fun updateInput(w: Wire) {
         if (ready) return
 
@@ -20,7 +37,6 @@ data class Gate(
 
         if (inputs.first.value != null && inputs.second.value != null) {
             ready = true
-//            runOp()
         }
     }
 
@@ -37,6 +53,14 @@ data class Gate(
         wireContainer?.onWireDateValueChange(output)
     }
 
-    override fun toString(): String =
-        "${inputs.first} ${gateOperator.name} ${inputs.second} -> ${output.value}"
+    override fun toEquationOutput(displayValues: Boolean): String {
+        val elements = listOf(
+            inputs.first.toEquationOutput(displayValues),
+            gateOperator.name,
+            inputs.second.toEquationOutput(displayValues),
+            "->",
+            output.toEquationOutput(displayValues)
+        )
+        return elements.joinToString(" ")
+    }
 }

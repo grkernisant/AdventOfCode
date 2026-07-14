@@ -52,4 +52,25 @@ class Day24Test {
         md.run()
         Assertions.assertEquals(2024L, md.getSystemOutput())
     }
+
+    @Test
+    @DisplayName("analyze and correct output errors")
+    fun analyzeOutputs() {
+        val largeInput = Day24.readInput("with46Gates")
+        val parser = Parser(largeInput, mapOf(
+            "z05" to "hdt",
+            "z09" to "gbf",
+            "mht" to "jgt",
+            "z30" to "nbf"
+        ))
+        val md = MonitoringDevice.of(parser)
+        md.run()
+        val ww = md.findWrongWires()
+        ww.forEach {
+            println(md.getFullEquationFor(it))
+        }
+
+        Assertions.assertTrue(ww.isEmpty())
+        Assertions.assertEquals(md.getSystemOutput(), md.getSumOfXY().second)
+    }
 }

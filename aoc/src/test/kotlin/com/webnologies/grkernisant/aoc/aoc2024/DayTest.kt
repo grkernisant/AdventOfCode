@@ -19,8 +19,8 @@ interface DayTest {
         }
     }
 
-    fun readInput(): List<String> {
-        val name = getInputName()
+    fun readInput(suffix: String = ""): List<String> {
+        val name = "${ getInputName() }$suffix".trim()
         return object {}.javaClass.getResourceAsStream("/2024/$name.txt")
             ?.bufferedReader()
             ?.readLines()
