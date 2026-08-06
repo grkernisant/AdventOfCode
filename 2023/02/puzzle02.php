@@ -125,6 +125,9 @@ class Main
         $games = $this->parseGames($this->parser->getInput());
         $valid_games = array_filter($games, fn($game) => $game->isValid);
         echo sprintf("Valid games ID sum: %d", array_sum(array_keys($valid_games))), PHP_EOL;
+
+        $power_cubes_sum = array_sum(array_map(fn($game) => $game->getPowerCube(), $games));
+        echo sprintf("Sum of Power Cubes: %d", $power_cubes_sum), PHP_EOL;
     }
 
     public function runTest(): void
@@ -150,11 +153,30 @@ class Main
 
 class Game
 {
+    public GameSet $minGameSet;
+
     public function __construct(
         public int $id,
         public array $gameSets,
         public bool $isValid
-    ) {}
+    ) {
+        $minGameSet = array_reduce($this->gameSets, function ($carry, $curr) {
+            if ($curr->red > $carry->red) $carry->red = $curr->red;
+            if ($curr->green > $carry->green) $carry->green = $curr->green;
+            if ($curr->blue > $carry->blue) $carry->blue = $curr->blue;
+            return $carry;
+        }, (object) array('red' => 0, 'green' => 0, 'blue' => 0));
+        $this->minGameSet = new GameSet(
+            red: $minGameSet->red,
+            green: $minGameSet->green,
+            blue: $minGameSet->blue
+        );
+    }
+
+    public function getPowerCube(): int
+    {
+        return $this->minGameSet->red * $this->minGameSet->green * $this->minGameSet->blue;
+    }
 }
 
 class GameSet
