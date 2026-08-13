@@ -57,9 +57,17 @@ class Main
         );
     }
 
+    private function initLogs(array $names)
+    {
+        foreach($names as $log) {
+            Logger::log($log, '');
+        }
+    }
+
     public function run(): void
     {
         if ($this->test_mode) $this->runTest();
+        $this->initLogs(['std_err']);
 
         $this->scratchCards = $this->parseScratchCards($this->parser->getInput());
         echo sprintf("Part1: %d", $this->getScratchCardPoints()), PHP_EOL;
