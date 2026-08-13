@@ -93,6 +93,27 @@ class Main
         return $adjacent;
     }
     
+    private function getGearRatiosSum(array $part_numbers): int
+    {
+        $possible_gears = array();
+        foreach($part_numbers as $pn) {
+            if ($pn->is_valid) {
+                $keys = array_keys($pn->symbols);
+                $vals = array_values($pn->symbols);
+                if ($vals[0] === '*') {
+                    $possible_gears[$keys[0]][] = $pn->part_number;
+                }
+            }
+        }
+
+        $gears = array_filter($possible_gears, fn($g) => count($g) === 2);
+        return array_reduce(
+            $gears,
+            fn($multi, $part_numbers) => $multi + $part_numbers[0] * $part_numbers[1],
+            0
+        );
+    }
+
     private function getValidPartNumbersSum(array $part_numbers): int
     {
         return array_reduce(
@@ -150,6 +171,7 @@ class Main
 
         $this->part_numbers = $this->parseNumbers($this->parser->getInput());
         echo sprintf("Sum of valid part numbers: %d", $this->getValidPartNumbersSum($this->part_numbers)), PHP_EOL;
+        echo sprintf("Sum of gear ratios: %d", $this->getGearRatiosSum($this->part_numbers)), PHP_EOL;
     }
 
     public function runTest(): void
