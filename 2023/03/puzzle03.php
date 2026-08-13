@@ -37,7 +37,7 @@ class Main
         return array_search($option, $this->options) !== false;
     }
 
-    private function getAdjacentCells(array $grid, int $x, int $y, int $number): array
+    private function getAdjacentCells(array $grid, int $x, int $y, int $number, bool $is_assoc): array
     {
         $adjacent = [];
         $rows = count($grid);
@@ -45,27 +45,49 @@ class Main
 
         $x_min = max(0, $x - 1);
         $x_max = min($cols - 1, $x + strlen((string)$number));
+        $range = range($x_min, $x_max);
 
         // row above
         $y_above = $y - 1;
         if ($y_above >= 0) {
-            $row_above = substr($grid[$y_above], $x_min, $x_max - $x_min + 1);
-            array_splice($adjacent, count($adjacent), 0, str_split($row_above));
+            if ($is_assoc) {
+                foreach($range as $rx) {
+                    $adjacent["$y_above,$rx"] = $grid[$y_above][$rx];
+                }
+            } else {
+                $row_above = substr($grid[$y_above], $x_min, $x_max - $x_min + 1);
+                array_splice($adjacent, count($adjacent), 0, str_split($row_above));
+            }
         }
 
         // current row
         if ($x_min >=0 && !is_numeric($grid[$y][$x_min])) {
-            $adjacent[] = $grid[$y][$x_min];
+            if ($is_assoc) {
+                $adjacent["$y,$x_min"] = $grid[$y][$x_min];
+            } else {
+                $adjacent[] = $grid[$y][$x_min];
+            }
         }
         if ($x_max <= ($cols - 1) && !is_numeric($grid[$y][$x_max])) {
-            $adjacent[] = $grid[$y][$x_max];
+            if ($is_assoc) {
+                $adjacent["$y,$x_max"] = $grid[$y][$x_max];
+            } else {
+                $adjacent[] = $grid[$y][$x_max];
+            }
         }
 
         // row below
         $y_below = $y + 1;
         if ($y_below < $rows) {
-            $row_below = substr($grid[$y_below], $x_min, $x_max - $x_min + 1);
-            array_splice($adjacent, count($adjacent), 0, str_split($row_below));
+            if ($is_assoc) {
+                reset($range);
+                foreach($range as $rx) {
+                    $adjacent["$y_below,$rx"] = $grid[$y_below][$rx];
+                }
+            } else {
+                $row_below = substr($grid[$y_below], $x_min, $x_max - $x_min + 1);
+                array_splice($adjacent, count($adjacent), 0, str_split($row_below));
+            }
         }
 
         return $adjacent;
@@ -100,7 +122,7 @@ class Main
                 foreach($matches[0] as $match) {
                     $number = (int) $match[0];
                     $position = (int) $match[1];
-                    $adjacent = $this->getAdjacentCells($input, $position, $y, $number);
+                    $adjacent = $this->getAdjacentCells($input, $position, $y, $number, true);
                     $numbers[] = new PartNumber(part_number: $number, symbols: $this->hasPartNumberSymbol($adjacent));
                     $clr = end($numbers)->is_valid ? "green" : "red";
                     $repl[] = (object) array(
