@@ -92,17 +92,21 @@ class ScratchCard
     // Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
     private static string $CARD_REGEX = '/^Card\s+(\d+):((?:\s+\d+)+)\s\|((?:\s+\d+)+)$/';
 
+    public array $matches;
+    public int $winningCardCount;
+
     public function __construct(
         public int $id,
         public array $winningNumbers,
         public array $numbers
-    ) {}
+    ) {
+        $this->matches = array_intersect($this->winningNumbers, $this->numbers);
+        $this->winningCardCount = count($this->matches);
+    }
 
     public function getPoints(): int
     {
-        $matches = array_intersect($this->winningNumbers, $this->numbers);
-        $nb = count($matches);
-        return $nb > 0 ? pow(2, $nb -1) : 0;
+        return $this->winningCardCount > 0 ? pow(2, $this->winningCardCount -1) : 0;
     }
 
     public static function from(string $sc): ?ScratchCard
