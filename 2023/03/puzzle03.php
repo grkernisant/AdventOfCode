@@ -123,7 +123,7 @@ class Main
                     $number = (int) $match[0];
                     $position = (int) $match[1];
                     $adjacent = $this->getAdjacentCells($input, $position, $y, $number, true);
-                    $numbers[] = new PartNumber(part_number: $number, symbols: $this->hasPartNumberSymbol($adjacent));
+                    $numbers[] = new PartNumber(part_number: $number, adjacent: $adjacent);
                     $clr = end($numbers)->is_valid ? "green" : "red";
                     $repl[] = (object) array(
                         'find' => $number,
@@ -176,9 +176,18 @@ class Main
 
 class PartNumber {
     public bool $is_valid;
+    public array $symbols;
 
-    public function __construct(public int $part_number, public array $symbols = []) {
-        $this->is_valid = !empty($symbols);
+    public function __construct(public int $part_number, array $adjacent = []) {
+        $this->symbols = $this->hasPartNumberSymbol($adjacent);
+        $this->is_valid = !empty($this->symbols);
+    }
+
+    private function hasPartNumberSymbol(array $adjacent): array
+    {
+        if (empty($adjacent)) return array();
+
+        return array_filter($adjacent, fn($cell) => $cell !== '.' && !is_numeric($cell));
     }
 }
 
