@@ -11,6 +11,7 @@ class Main
 
     private bool $test_mode = false;
     private bool $debug_mode = false;
+    private array $options;
 
     private Parser $parser;
     private array $part_numbers;
@@ -30,6 +31,10 @@ class Main
     {
         $path = array_filter($args, fn($arg) => strpos($arg, '--') === false);
         return reset($path) ?: static::DEFAULT_INPUT;
+    }
+
+    private function hasOption(string $option): bool {
+        return array_search($option, $this->options) !== false;
     }
 
     private function getAdjacentCells(array $grid, int $x, int $y, int $number): array
@@ -141,8 +146,9 @@ class Main
 
     private function setOptions(array $args): void
     {
-        $this->debug_mode = (array_search(static::DEBUG_MODE, $args) !== false);
-        $this->test_mode = (array_search(static::TEST_MODE, $args) !== false);
+        $this->options = $args;
+        $this->debug_mode = $this->hasOption(static::DEBUG_MODE);
+        $this->test_mode = $this->hasOption(static::TEST_MODE);
     }
 }
 
