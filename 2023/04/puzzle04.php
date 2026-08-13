@@ -48,6 +48,35 @@ class Main
         return $cards;
     }
 
+    private function getScratchCardCount(): int
+    {
+        $cards = array();
+        // init
+        foreach($this->scratchCards as $sc) {
+            $cards[$sc->id] = 1;
+        }
+        // process copies
+        foreach($this->scratchCards as $sc) {
+            $currentCardCount = $cards[$sc->id];
+            $newCards = $sc->winningCardCount;
+            $debug = sprintf(
+                "Card %d has %d copies and wins %d new cards",
+                $sc->id,
+                $currentCardCount,
+                $newCards
+            );
+            Logger::log('std_err', $debug, true);
+            if ($newCards > 0) {
+                $range = range($sc->id + 1, $sc->id + $newCards);
+                foreach($range as $r) {
+                    if (isset($cards[$r])) $cards[$r]+= $currentCardCount;
+                }
+            }
+        }
+
+        return array_sum($cards);
+    }
+
     private function getScratchCardPoints(): int
     {
         return array_reduce(
@@ -71,6 +100,7 @@ class Main
 
         $this->scratchCards = $this->parseScratchCards($this->parser->getInput());
         echo sprintf("Part1: %d", $this->getScratchCardPoints()), PHP_EOL;
+        echo sprintf("Part2: %d", $this->getScratchCardCount()), PHP_EOL;
     }
 
     public function runTest(): void
