@@ -75,6 +75,7 @@ class Almanac
     );
 
     private function __construct(
+        public SeedMode $mode,
         public array $seeds,
         public array $transforms,
         public array $maps
@@ -218,6 +219,12 @@ class RangeMap
         public string $dst_type,
         public array $dst_range,
     ) {}
+}
+
+enum SeedMode
+{
+    case AsList;
+    case AsRange;
 }
 
 class Utils
