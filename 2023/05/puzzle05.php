@@ -121,46 +121,45 @@ class Almanac
         throw new \Exception(sprintf("Cannot convert %d from %s to %s", $id, $src_type, $dst_type));
     }
 
-    public static function factorize(array $input): Almanac
+    public static function factorize(array $input, SeedMode $seed_mode = SeedMode::AsList): Almanac
     {
         if (is_array($input) && isset($input[0])) {
             preg_match(static::$REGEX['seeds'], $input[0], $matches);
-            if ($matches !== null) {
-                $seeds = Utils::getLineNumbers(substr($input[0], 6));
+            if ($matches === null) throw new \Exception('Wrong Almanac format');
 
-                $range = range(2, count($input)-1);
-                $src_type = $dst_type = "";
-                $maps = $transforms = array();
-                foreach($range as $r) {
-                    $line = trim($input[$r]);
-                    if (empty($line)) continue;
+            $seeds = Utils::getLineNumbers(substr($input[0], 6));
+            $range = range(2, count($input)-1);
+            $src_type = $dst_type = "";
+            $maps = $transforms = array();
+            foreach($range as $r) {
+                $line = trim($input[$r]);
+                if (empty($line)) continue;
 
-                    if (preg_match(RangeMap::$REGEX_TYPES, $line, $matches)) {
-                        $src_type = $matches[1];
-                        $dst_type = $matches[2];
-                        $transforms[$src_type] = $dst_type;
-                    }
+                if (preg_match(RangeMap::$REGEX_TYPES, $line, $matches)) {
+                    $src_type = $matches[1];
+                    $dst_type = $matches[2];
+                    $transforms[$src_type] = $dst_type;
+                }
 
-                    if (preg_match(RangeMap::$REGEX_BOUNDARIES, $line, $matches)) {
-                        if (!isset($maps[$src_type])) $maps[$src_type] = array();
-                        $boundaries = Utils::getLineNumbers($line);
-                        if (count($boundaries) === 3) {
-                            $dst_min = $boundaries[0];
-                            $src_min = $boundaries[1];
-                            $range = $boundaries[2];
+                if (preg_match(RangeMap::$REGEX_BOUNDARIES, $line, $matches)) {
+                    if (!isset($maps[$src_type])) $maps[$src_type] = array();
+                    $boundaries = Utils::getLineNumbers($line);
+                    if (count($boundaries) === 3) {
+                        $dst_min = $boundaries[0];
+                        $src_min = $boundaries[1];
+                        $range = $boundaries[2];
 
-                            $maps[$src_type][] = new RangeMap(
-                                src_type: $src_type,
-                                src_range: array($src_min, $src_min + $range  - 1),
-                                dst_type: $dst_type,
-                                dst_range: array($dst_min, $dst_min + $range - 1)
-                            );
-                        }
+                        $maps[$src_type][] = new RangeMap(
+                            src_type: $src_type,
+                            src_range: array($src_min, $src_min + $range  - 1),
+                            dst_type: $dst_type,
+                            dst_range: array($dst_min, $dst_min + $range - 1)
+                        );
                     }
                 }
             }
 
-            return new Almanac($seeds, $transforms, $maps);
+            return new Almanac($seed_mode, $seeds, $transforms, $maps);
         }
 
         throw new \Exception('Input should be an array of strings');
