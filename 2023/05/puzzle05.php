@@ -84,7 +84,7 @@ class Almanac
 
     public function convertTo(int $id, string $src_type = 'seed', string $dst_type = 'location'): int
     {
-        if (!isset($this->maps[$src_type])) throw new \Error(sprintf("Source type: %s does not exist", $src_type));
+        if (!isset($this->maps[$src_type])) throw new \Exception(sprintf("Source type: %s does not exist", $src_type));
 
         $next_id = null;
         $found = false;
@@ -117,7 +117,7 @@ class Almanac
 
     private function convertError(int $id, string $src_type, string $dst_type)
     {
-        throw new \Error(sprintf("Cannot convert %d from %s to %s", $id, $src_type, $dst_type));
+        throw new \Exception(sprintf("Cannot convert %d from %s to %s", $id, $src_type, $dst_type));
     }
 
     public static function factorize(array $input): Almanac
@@ -162,7 +162,7 @@ class Almanac
             return new Almanac($seeds, $transforms, $maps);
         }
 
-        throw new \Error('Input should be an array of strings');
+        throw new \Exception('Input should be an array of strings');
     }
 
     public function getLowestLocationNumber(): ?int
