@@ -78,7 +78,9 @@ class Almanac
         public array $seeds,
         public array $transforms,
         public array $maps
-    ) {}
+    ) {
+        $this->initMaps();
+    }
 
     public function convertTo(int $id, string $src_type = 'seed', string $dst_type = 'location'): int
     {
@@ -174,6 +176,34 @@ class Almanac
         }
 
         return $lowest;
+    }
+
+    private function initMaps() {
+        foreach($this->maps as $k => $v) {
+            // sort by src_range
+            $this->maps[$k] = $this->sortBySrcRange($v);
+
+            // pad with equivalent 1:1 mapping
+            // starting at 0 if missing
+            $firstMapRange = reset($this->maps[$k]);
+            if ($firstMapRange->src_range[0] !== 0) {
+                $padded_range = array(0, $firstMapRange->src_range[0] - 1);
+                $padding = new RangeMap(
+                    src_type: $firstMapRange->src_type,
+                    src_range: $padded_range,
+                    dst_type: $firstMapRange->dst_type,
+                    dst_range: $padded_range,
+                );
+                array_unshift($this->maps[$k], $padding);
+            }
+        }
+    }
+
+    private function sortBySrcRange(array $mapRange): array {
+        usort($mapRange, function($a, $b) {
+            return reset($a->src_range) - reset($b->src_range);
+        });
+        return $mapRange;
     }
 }
 
