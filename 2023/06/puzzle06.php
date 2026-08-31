@@ -43,7 +43,7 @@ class Main
         }
     }
 
-    public static function parseRaces(array $input): array
+    public static function parseRaces(array $input, bool $with_kerning = true): array
     {
         if (count($input) > 2) throw new \Exception("INVALID_INPUT_FORMAT");
 
@@ -53,7 +53,7 @@ class Main
             $regex = sprintf('/^%s:(?:\s+(\d+))+$/', $p);
             preg_match($regex, $input[$l], $matches);
             if ($matches === null)  throw new \Exception("INVALID_INPUT_FORMAT");
-            $numbers[] = static::getLineNumbers($input[$l], "{$p}:");
+            $numbers[] = static::getLineNumbers($input[$l], "{$p}:", $with_kerning);
         }
 
         if (count($numbers[0]) !== count($numbers[1])) throw new \Exception("INVALID_NB_RACES_DATA");
@@ -61,7 +61,7 @@ class Main
         $races = array();
         $data = array_combine($numbers[0], $numbers[1]);
         foreach($data as $time => $distance) {
-            $races[] = new Race(time: $time, distance: $distance);
+            $races[] = new Race(time: $time, distance: $distance, with_kerning: $with_kerning);
         }
 
         return $races;
@@ -78,10 +78,11 @@ class Main
         );
     }
 
-    private static function getLineNumbers(string $line, string $prefix): array
+    private static function getLineNumbers(string $line, string $prefix, bool $with_kerning): array
     {
         $line = trim(substr($line, strlen($prefix)));
-        $line = preg_replace('/\s+/', ' ', $line);
+        $spaces = $with_kerning ? ' ' : '';
+        $line = preg_replace('/\s+/', $spaces, $line);
         return array_map(fn($x) => (int) $x, explode(' ', $line));
     }
 
@@ -91,6 +92,9 @@ class Main
 
         $races = static::parseRaces($this->parser->getInput());
         echo sprintf("Part 1: %d\n", static::getErrorMargin($races));
+
+        $racesNoKerning = static::parseRaces($this->parser->getInput(), with_kerning: false);
+        echo sprintf("Part 2: %d\n", static::getErrorMargin($racesNoKerning));
     }
 
     private function runTest(): bool
@@ -104,6 +108,7 @@ class Main
         $this->debug_mode = $this->hasOption(static::DEBUG_MODE);
         $this->test_mode = $this->hasOption(static::TEST_MODE);
     }
+
 }
 
 class Race
@@ -111,7 +116,7 @@ class Race
     public array $results;
     public int $ways_to_win;
 
-    public function __construct(public int $time, public int $distance)
+    public function __construct(public int $time, public int $distance, public bool $with_kerning =  true)
     {
         $this->ways_to_win = 0;
         $this->solve();
@@ -131,12 +136,42 @@ class Race
 
     public function solve(): void
     {
+        if ($this->with_kerning) $this->solveWithIteration();
+        else $this->solveQuadraticEquation();
+    }
+
+    private function solveWithIteration(): void
+    {
         $speed = range(0, $this->time);
         foreach($speed as $s) {
             $d = $this->getBoatDistance($s);
             $this->results[$s] = $d;
             if ($d > $this->distance) $this->ways_to_win++;
         }
+    }
+
+    private function solveQuadraticEquation(): void
+    {
+        // distance = speed * time
+        // time = maxTime - timePressed = maxTime - speed
+        // (maxTime - speed) speed > maxDistance
+        // -1 s^2 + maxTime s - maxDistance > 0
+        // a: -1, b: maxTime, c: -1 * maxDistance
+
+        $a = -1;
+        $b = $this->time;
+        $c = -1 * $this->distance;
+        // discriminant: b2 - 4ac
+        $d = pow($b, 2) - 4 * $a  * $c;
+        // -b -+ sqrt(d) / 2a
+        $solutions = array(
+            (-1 * $b - sqrt($d)) / 2 * $a,
+            (-1 * $b + sqrt($d)) / 2 * $a,
+        );
+        $speed_min = (int) ceil(min($solutions));
+        $speed_max = (int) floor(max($solutions));
+
+        $this->ways_to_win = $speed_max - $speed_min + 1;
     }
 }
 

@@ -16,9 +16,11 @@ final class Day06Test extends TestCase
 
     public function testParseInputsCorrectly()
     {
-        $races = Main::parseRaces($this->getInput('../test'));
+        $racesWithKerning = Main::parseRaces($this->getInput('../test'));
+        $this->assertEquals(3, count($racesWithKerning));
 
-        $this->assertEquals(3, count($races));
+        $racesNoKerning = Main::parseRaces($this->getInput('../test'), with_kerning: false);
+        $this->assertEquals(1, count($racesNoKerning));
     }
 
     public function testCalculatesBoatDistances()
@@ -42,5 +44,13 @@ final class Day06Test extends TestCase
         }
 
         $this->assertEquals(288, Main::getErrorMargin($races));
+    }
+
+    public function testCalculatesWaysToWinAndErrorMarginWithoutKerning()
+    {
+        $races = Main::parseRaces($this->getInput('../test'), false);
+        $this->assertEquals(71530, $races[0]->time);
+        $this->assertEquals(940200, $races[0]->distance);
+        $this->assertEquals(71503, Main::getErrorMargin($races));
     }
 }
