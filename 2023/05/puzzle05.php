@@ -38,8 +38,6 @@ class Main
         return array_search($option, $this->options) !== false;
     }
 
-
-
     private function initLogs(array $names)
     {
         foreach($names as $log) {
@@ -53,6 +51,9 @@ class Main
 
         $almanac = Almanac::factorize($this->parser->getInput());
         echo sprintf("Part 1: %d", $almanac->getLowestLocationNumber()), PHP_EOL;
+
+        $almanac2 = Almanac::factorize($this->parser->getInput(), SeedMode::AsRange);
+        echo sprintf("Part 2: %d", $almanac2->getLowestLocationNumber()), PHP_EOL;
     }
 
     private function runTest(): bool
@@ -71,7 +72,7 @@ class Main
 class Almanac
 {
     private static $REGEX = array(
-        'seeds' => "/^seeds:(?:\s+(\d+))+$/"
+        'seeds' => '/^seeds:(?:\s+(\d+))+$/'
     );
 
     private function __construct(
@@ -99,7 +100,7 @@ class Almanac
             if (!$found) $i++;
         }
 
-        $next_type = $this->transforms[$src_type] ?? $this->convertError($id, $src_type, $dst_type);;
+        $next_type = $this->transforms[$src_type] ?? $this->convertError($id, $src_type, $dst_type);
 
         if ($found) {
             $map = $this->maps[$src_type][$i];
@@ -167,6 +168,13 @@ class Almanac
 
     public function getLowestLocationNumber(): ?int
     {
+        return $this->mode === SeedMode::AsList
+            ? $this->getLowestLocationNumberAsList()
+            : $this->getLowestLocationNumberAsRange();
+    }
+
+    private function getLowestLocationNumberAsList(): ?int
+    {
         $lowest = null;
         foreach($this->seeds as $s) {
             $loc = $this->convertTo($s, 'seed', 'location');
@@ -178,10 +186,99 @@ class Almanac
         return $lowest;
     }
 
+    private function getLowestLocationNumberAsRange(): ?int
+    {
+        $found = false;
+        $location_range = array(... $this->maps['humidity']);
+        usort($location_range, RangeMap::sortByDstRange(...));
+        foreach($location_range as $n => $l_range) {
+            $rv = $this->revertFromRange($l_range->dst_range, 'seed', 'location');
+            $i = 0;
+            $l = count($rv);
+            while ($i < $l && !$found) {
+                $r = $rv[$i];
+                // check range intersections
+                $inter = $this->hasSeed($r);
+                $found = !empty($inter);
+                if ($found) {
+                    return $this->convertTo($inter[0][0]);
+                }
+    
+                $i++;
+            }
+        }
+
+        return null;
+    }
+
+    private function getRevertFromRangeMap(int $id, string $src_type, string $dst_type): RangeMap
+    {
+        if (!in_array($dst_type, $this->transforms)) throw new \Exception(sprintf("Destination type: %s does not exist", $dst_type));
+
+        $lbound = array();
+        $prev_type = array_search($dst_type, $this->transforms) ?? $this->convertError($id, $src_type, $dst_type);
+        $found = false;
+        $nb = count($this->maps[$prev_type]);
+        $i = 0;
+        while($i < $nb && !$found) {
+            $map = $this->maps[$prev_type][$i];
+            $gte = $id >= $map->dst_range[0];
+            $lte = $id <= $map->dst_range[1];
+            // closest upper boundary has smallest difference
+            if ($id < $map->dst_range[0]) {
+                $lbound[$map->dst_range[0]] = $map->dst_range[0] - $id;
+            }
+
+            $found = $gte && $lte;
+            if (!$found) $i++;
+        }
+
+        if ($found) {
+            return $this->maps[$prev_type][$i];
+        }
+
+        // out of bounds?
+        if (count($lbound) === 0) {
+            return new RangeMap(
+                src_type: $prev_type,
+                src_range: array($id, PHP_INT_MAX),
+                dst_type: $dst_type,
+                dst_range: array($id, PHP_INT_MAX)
+            );    
+        }
+
+        asort($lbound);
+        $ubound = reset($lbound) - 1;
+        // identity range map
+        return new RangeMap(
+            src_type: $prev_type,
+            src_range: array($id, $ubound),
+            dst_type: $dst_type,
+            dst_range: array($id, $ubound)
+        );
+    }
+
+    public function getSeeds(): Generator
+    {
+        if ($this->mode === SeedMode::AsList) {
+            foreach($this->seeds as $s) yield $s;
+        } else {
+            $seed_chunks = array_chunk($this->seeds, 2);
+            foreach($seed_chunks as $sc) {
+                $current = $sc[0];
+                $start = $current;
+                $max = $start + abs($sc[1]) - 1;
+                while ($current <= $max) {
+                    yield $current++;
+                }
+            }
+        }
+    }
+
     private function initMaps() {
         foreach($this->maps as $k => $v) {
             // sort by src_range
-            $this->maps[$k] = $this->sortBySrcRange($v);
+            usort($this->maps[$k], array('RangeMap', 'sortBySrcRange'));
 
             // pad with equivalent 1:1 mapping
             // starting at 0 if missing
@@ -199,11 +296,143 @@ class Almanac
         }
     }
 
-    private function sortBySrcRange(array $mapRange): array {
-        usort($mapRange, function($a, $b) {
-            return reset($a->src_range) - reset($b->src_range);
-        });
-        return $mapRange;
+    public function isSeed(int $s): bool {
+        return $this->mode === SeedMode::AsList
+            ? $this->isSeedAsList($s)
+            : $this->isSeedAsRange($s);
+    }
+
+    private function isSeedAsList(int $s): bool {
+        return in_array($s, $this->seeds);
+    }
+
+    private function isSeedAsRange(int $s): bool {
+        $found = false;
+        $seed_chunks = array_chunk($this->seeds, 2);
+        foreach($seed_chunks as $sc) {
+            $found = $sc[0] <= $s && $s <= $sc[0] + abs($sc[1]) - 1;
+            if ($found) break;
+        }
+
+        return $found;
+    }
+
+    public function hasSeed(array $range): array
+    {
+        return $this->mode === SeedMode::AsList
+            ? $this->hasSeedAsList($range)
+            : $this->hasSeedAsRange($range);
+    }
+
+    private function hasSeedAsList(array $range): array
+    {
+        $contains = array();
+        foreach($this->getSeeds() as $seed) {
+            if ($range[0] <= $seed && $seed <= $range[1]) {
+                $contains[] = $seed;
+            }
+        }
+
+        return $contains;
+    }
+
+    private function hasSeedAsRange(array $range): array
+    {
+        $contains = array();
+        $chunks = array_chunk($this->seeds, 2);
+        foreach($chunks as $c) {
+            $seed_range_start = $c[0];
+            $seed_range_end   = $c[0] + $c[1] - 1;
+            $has_start = $seed_range_start <= $range[0] && $range[0] <= $seed_range_end;
+            $has_end   = $seed_range_start <= $range[1] && $range[1] <= $seed_range_end;
+            if ($has_start && $has_end) {
+                $contains[] = array($range[0], $range[1]);
+            } elseif ($has_start && !$has_end) {
+                $contains[] = array($range[0], $seed_range_end);
+            } elseif ($has_end) {
+                $contains[] = array($seed_range_start, $range[1]);
+            }
+        }
+
+        return $contains;
+    }
+
+    public function revertFrom(int $id, string $src_type = 'seed', string $dst_type = 'location'): int
+    {
+        if (!in_array($dst_type, $this->transforms)) throw new \Exception(sprintf("Destination type: %s does not exist", $dst_type));
+
+        $prev_id = null;
+        $prev_type = array_search($dst_type, $this->transforms) ?? $this->convertError($id, $src_type, $dst_type);
+        $found = false;
+        $nb = count($this->maps[$prev_type]);
+        $i = 0;
+        while($i < $nb && !$found) {
+            $map = $this->maps[$prev_type][$i];
+            $gte = $id >= $map->dst_range[0];
+            $lte = $id <= $map->dst_range[1];
+            $found = $gte && $lte;
+            if (!$found) $i++;
+        }
+
+        if ($found) {
+            $map = $this->maps[$prev_type][$i];
+            $offset = $id - $map->dst_range[0];
+            $prev_id = $map->src_range[0] + $offset;
+        } else {
+            $prev_id = $id;
+        }
+
+        if ($prev_id === null) $this->convertError($id, $prev_type, $dst_type);
+
+        if ($prev_type === $src_type) return $prev_id;
+
+        return $this->revertFrom($prev_id, $src_type, $prev_type);
+    }
+
+    public function revertFromRange(array $ids, string $src_type = 'seed', string $dst_type = 'location'): array
+    {
+        if (!in_array($dst_type, $this->transforms)) throw new \Exception(sprintf("Destination type: %s does not exist", $dst_type));
+
+        $previous_ids = array();
+        $current_src_type = null;
+        // lets map all value ranges
+        // from ids[0] to ids[1]
+        $nb_values = RangeMap::getDistance($ids[0], $ids[1]);
+        $current_id = $ids[0];
+        while ($nb_values > 0) {
+            $range_map = $this->getRevertFromRangeMap($current_id, $src_type, $dst_type);
+            $current_src_type = $range_map->src_type;
+            // lower bound
+            $lb = $range_map->getOffsetFromDst($current_id);
+            // upper bound
+            $ub = $range_map->getUpperBoundFromDst($current_id, RangeMap::getDistance($current_id, $ids[1]));
+            $previous_ids[] = array($lb, $ub);
+            // did we cover all values?
+            $new_values = RangeMap::getDistance($lb, $ub);
+            $nb_values -= $new_values;
+            $current_id+= $new_values;
+        }
+
+        if ($current_src_type === null) throw new \Exception(sprintf("Could not transfrom from %s to %s", $src_type, $dst_type));
+
+        if (count($previous_ids) > 1) {
+            $previous_ids = RangeMap::grouped($previous_ids);
+        }
+
+        // go from dst_type to src_type step by step
+        while ($current_src_type !== $src_type) {
+            $prev_src_type = array_search($current_src_type, $this->transforms);
+            $result = array();
+            foreach($previous_ids as $pid) {
+                $r = $this->revertFromRange($pid, $prev_src_type, $current_src_type);
+                array_splice($result, count($result), 0, $r);
+            }
+
+            $current_src_type = $prev_src_type;
+            $previous_ids = RangeMap::grouped($result);
+        }
+
+        return $previous_ids;
     }
 }
 
@@ -218,6 +447,90 @@ class RangeMap
         public string $dst_type,
         public array $dst_range,
     ) {}
+
+    public function __toString() {
+        return sprintf(
+            "RangeMap (src_type: %s, src_range: %s, dst_type: %s, dst_range: %s)",
+            $this->src_type,
+            sprintf("[%d-%d]", $this->src_range[0], $this->src_range[1]),
+            $this->dst_type,
+            sprintf("[%d-%d]", $this->dst_range[0], $this->dst_range[1]),
+        );
+    }
+
+    public static function getDistance(int $b1, int $b2): int
+    {
+        $min = min($b1, $b2);
+        $max = max($b1, $b2);
+
+        return $max - $min + 1;
+    }
+
+    private function getOffsetFrom(int $id, string $from = 'dst'): int
+    {
+        $dst = $from === 'dst' ? $this->dst_range : $this->src_range;
+        $src = $from === 'dst' ? $this->src_range : $this->dst_range;
+        $offset = $id - $dst[0];
+        return $src[0] + $offset;
+    }
+
+    public function getOffsetFromDst(int $id): int
+    {
+        return $this->getOffsetFrom($id, 'dst');
+    }
+
+    public function getOffsetFromSrc(int $id): int
+    {
+        return $this->getOffsetFrom($id, 'src');
+    }
+
+    public function getUpperBoundFromDst(int $id, int $l): int
+    {
+        $offset = $this->getOffsetFromDst($id);
+        return min(end($this->src_range), $offset + $l - 1);
+    }
+
+    public function getUpperBoundFromSrc(int $id, int $l): int
+    {
+        $offset = $this->getOffsetFromSrc($id);
+        return min(end($this->dst_range), $offset + $l);
+    }
+
+    public static function grouped(array $input): array
+    {
+        $grouped = array();
+        $current_start = $current_end = null;
+        $i = 0;
+        $l = count($input);
+        while ($i < $l) {
+            $current_start = reset($input[$i]);
+            $current_end   = end($input[$i]);
+            $j = $i + 1;
+            while ($j < $l && reset($input[$j]) === ($current_end + 1)) {
+                $current_end = end($input[$j]);
+                $j++;
+            }
+            $grouped[] = array($current_start, $current_end);
+            $i = $j;
+        }
+
+        return $grouped;
+    }
+
+    public function length(): int
+    {
+        return static::getDistance($this->src_range[0], $this->src_range[1]);
+    }
+
+    public static function sortByDstRange(RangeMap $a, RangeMap $b): int
+    {
+        return $a->dst_range[0] - $b->dst_range[0];
+    }
+
+    public static function sortBySrcRange(RangeMap $a, RangeMap $b): int
+    {
+        return $a->src_range[0] - $b->src_range[0];
+    }
 }
 
 enum SeedMode
