@@ -1,0 +1,14 @@
+{
+    "name": "grkernisant/aoc2023day07",
+    "description": "Advent of Code 2023 Day 7",
+    "require-dev": {
+        "phpunit/phpunit": "^12.5"
+    },
+    "authors": [
+        {
+            "name": "Guy-Robert Kernisant",
+            "email": "grkernisant@gmail.com"
+        }
+    ],
+    "require": {}
+}
