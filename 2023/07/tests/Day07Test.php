@@ -38,15 +38,4 @@ final class Day07Test extends TestCase
         $winnings = Main::getCamelPokerWinnings($hands);
         $this->assertEquals(5905, $winnings);
     }
-
-    public function testCanParseCamelPokerHandsWithJokers(): void
-    {
-        $hands = Main::parseCamelPokerHands($this->getInput('../input'), with_joker: true);
-        $sortByRank = CamelPokerHand::sortByRank(...);
-        usort($hands, $sortByRank);
-        $this->assertNotEmpty($hands);
-        foreach($hands as $i =>$hand) {
-            echo sprintf("Hand %d: %s", $i + 1, $hand) . PHP_EOL;
-        }
-    }
 }
