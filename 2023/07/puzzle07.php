@@ -55,7 +55,7 @@ class Main
         return $winnings;
     }
 
-    public static function parseCamelPokerHands(array $hands): array
+    public static function parseCamelPokerHands(array $hands, bool $with_joker = false): array
     {
         $parsedHands = [];
         foreach($hands as $hand) {
@@ -64,8 +64,9 @@ class Main
 
             [$handString, $bid] = explode(' ', $hand);
             $parsedHands[] = new CamelPokerHand(
-                cards: Hand::fromString($handString)->getCards(),
-                bid: (int) $bid
+                cards: Hand::fromString($handString, $with_joker)->getCards(),
+                bid: (int) $bid,
+                with_joker: $with_joker
             );
         }
 
@@ -79,6 +80,10 @@ class Main
         $hands = Main::parseCamelPokerHands($this->parser->getInput());
         $winnings = Main::getCamelPokerWinnings($hands);
         echo sprintf("Part 1: %d\n", $winnings);
+
+        $hands_with_jokers = Main::parseCamelPokerHands($this->parser->getInput(), with_joker: true);
+        $winnings_with_jokers = Main::getCamelPokerWinnings($hands_with_jokers);
+        echo sprintf("Part 2: %d\n", $winnings_with_jokers);
     }
 
     private function runTest(): bool
@@ -97,11 +102,25 @@ class Main
 
 class Card
 {
+    const JOKER_LABEL = 'J';
+
     public int $value;
 
-    public function __construct(public string $label)
+    public function __construct(public string $label, public bool $with_joker = false)
     {
         $this->value = $this->getValueFromLabel();
+    }
+
+    public static function getLabelFromValue(int $value): string
+    {
+        if ($value === 14) return 'A';
+        if ($value === 13) return 'K';
+        if ($value === 12) return 'Q';
+        if ($value === 11 || $value === 1) return 'J';
+        if ($value === 10) return 'T';
+        if ($value >= 2 && $value <= 9) return (string) $value;
+
+        throw new \Exception("Invalid card value: '$value'");
     }
 
     private function getValueFromLabel(): int
@@ -111,7 +130,7 @@ class Card
         if ($label === 'A') return 14;
         if ($label === 'K') return 13;
         if ($label === 'Q') return 12;
-        if ($label === 'J') return 11;
+        if ($label === 'J') return $this->with_joker ? 1 : 11;
         if ($label === 'T') return 10;
 
         throw new \Exception("Invalid card label: '$label'");
@@ -122,7 +141,7 @@ class Hand
 {
     public array $cards = [];
 
-    public function __construct(array $cards)
+    public function __construct(array $cards, public bool $with_joker = false)
     {
         foreach ($cards as $card) {
             if (!$card instanceof Card) throw new \Exception('Invalid card in hand');
@@ -137,34 +156,89 @@ class Hand
 
     public function getCards(): array { return $this->cards; }
 
-    public static function fromString(string $handString): Hand
+    public static function fromString(string $handString, bool $with_joker = false): Hand
     {
         $cardStrings = str_split($handString);
-        $cards = array_map(function($c) {
-            return new Card(label: $c);
+        $cards = array_map(function($c) use ($with_joker) {
+            return new Card(label: $c, with_joker: $with_joker);
         }, $cardStrings);
 
         $classname = get_called_class();
-        return new $classname($cards);
+        return new $classname($cards, $with_joker);
     }
 }
 
 class CamelPokerHand extends Hand
 {
     public CamelPokerHandRank $rank;
+    public bool $has_joker;
 
-    public function __construct(array $cards, public int $bid)
+    public function __construct(array $cards, public int $bid, bool $with_joker = false)
     {
         if (count($cards) !== 5) throw new \Exception('Poker hand must have exactly 5 cards');
-        parent::__construct($cards);
+        parent::__construct($cards, $with_joker);
 
+        $this->has_joker = $this->checkForJoker();
         $this->rank = $this->getRankFromCards();
+    }
+
+    public function __toString(): string
+    {
+        $real_hand = implode('', array_map(fn($card) => $card->label, $this->cards));
+        $optimized_hand = implode('', array_map(fn($card) => $card->label, $this->getOptimizedHand()));
+        return sprintf(
+            "Hand: %s | Optimized: %s | HasJoker: %b | Rank: %s | Bid: %d",
+            $real_hand,
+            $optimized_hand,
+            $this->has_joker,
+            $this->rank->name,
+            $this->bid
+        );
+    }
+
+    private function checkForJoker(): bool
+    {
+        if (!$this->with_joker) return false;
+
+        foreach ($this->cards as $card) if ($card->label === Card::JOKER_LABEL) return true;
+        return false;
+    }
+
+    public function getOptimizedHand(): array
+    {
+        if (!$this->has_joker) return $this->cards;
+
+        // Find the most frequent non-joker card
+        $values = array_map(fn($c) => $c->value, $this->cards);
+        $counts = array_count_values($values);
+
+        // Remove the joker (value 1) from counts
+        unset($counts[1]);
+
+        if (empty($counts)) {
+            // All cards are jokers, so optimize to A
+            $strongest_value = 14;
+        } else {
+            $highest_frequency = max($counts);
+            $counts_filtered = array_filter($counts, fn($count) => $count === $highest_frequency);
+            $strongest_value = max(array_keys($counts_filtered));
+        }
+
+        $strongest_label = Card::getLabelFromValue($strongest_value);
+        $optimized_cards = array_map(function($card) use ($strongest_label) {
+            if ($card->label === Card::JOKER_LABEL) {
+                return new Card(label: $strongest_label, with_joker: true);
+            }
+            return $card;
+        }, $this->cards);
+
+        return $optimized_cards;
     }
 
     private function getRankFromCards(): CamelPokerHandRank
     {
         $values = array_reduce(
-            $this->cards,
+            $this->getOptimizedHand(),
             function($carry, $card) {
                 $carry[] = $card->label;
                 return $carry;

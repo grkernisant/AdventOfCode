@@ -29,4 +29,24 @@ final class Day07Test extends TestCase
         $winnings = Main::getCamelPokerWinnings($hands);
         $this->assertEquals(6440, $winnings);
     }
+
+    public function testCanSubstituteJokers(): void
+    {
+        $hands = Main::parseCamelPokerHands($this->getInput('../test'), with_joker: true);
+        $this->assertNotEmpty($hands);
+
+        $winnings = Main::getCamelPokerWinnings($hands);
+        $this->assertEquals(5905, $winnings);
+    }
+
+    public function testCanParseCamelPokerHandsWithJokers(): void
+    {
+        $hands = Main::parseCamelPokerHands($this->getInput('../input'), with_joker: true);
+        $sortByRank = CamelPokerHand::sortByRank(...);
+        usort($hands, $sortByRank);
+        $this->assertNotEmpty($hands);
+        foreach($hands as $i =>$hand) {
+            echo sprintf("Hand %d: %s", $i + 1, $hand) . PHP_EOL;
+        }
+    }
 }
