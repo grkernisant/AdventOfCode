@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+define('TEST_MODE', 'TEST_MODE');
+
 require_once (__DIR__ . '/../vendor/autoload.php');
 require_once (__DIR__ . '/../puzzle08.php');
 
