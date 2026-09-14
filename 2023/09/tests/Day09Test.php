@@ -30,16 +30,25 @@ class Day09Test extends TestCase
 
     public function testCanParseInputAndPredict(): void
     {
-        $expectedResults = array(18, 28, 68);
+        $expectedResults = (object) array(
+            'next' => array(18, 28, 68),
+            'prev' => array(-3, 0, 5),
+        );
         $parser = new Parser(dirname(__FILE__) . '/../test');
         $reports = Main::parseReports($parser->getInput());
         foreach($reports as $i => $r) {
-            $this->assertEquals($expectedResults[$i], $r->next_number);
+            $this->assertEquals($expectedResults->next[$i], $r->next_number);
+            $this->assertEquals($expectedResults->prev[$i], $r->prev_number);
         }
 
         $this->assertEquals(
-            array_sum($expectedResults),
+            array_sum($expectedResults->next),
             Main::getReportLinesNextNumbersSum($reports)
+        );
+
+        $this->assertEquals(
+            array_sum($expectedResults->prev),
+            Main::getReportLinesPrevNumbersSum($reports)
         );
     }
 }

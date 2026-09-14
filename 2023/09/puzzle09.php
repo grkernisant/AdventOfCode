@@ -68,12 +68,26 @@ class Main
         );
     }
 
+    public static function getReportLinesPrevNumbersSum(array $reports): int
+    {
+        return array_reduce(
+            $reports,
+            function(int $acc, ReportLine $curr) {
+                $acc+= $curr->prev_number;
+                return $acc;
+            },
+            0
+        );
+    }
+
     public function run(): void
     {
         if ($this->runTest()) return;
 
         $reports = static::parseReports($this->parser->getInput());
         echo sprintf("Part 1: %d\n", static::getReportLinesNextNumbersSum($reports));
+
+        echo sprintf("Part 2: %d\n", static::getReportLinesPrevNumbersSum($reports));
     }
 
     private function runTest(): bool
@@ -92,14 +106,15 @@ class Main
 
 class ReportLine
 {
+    public int $prev_number;
     public int $next_number;
 
     public function __construct(public array $numbers)
     {
-        $this->setNextNumber();
+        $this->setPrevNextNumber();
     }
 
-    private function setNextNumber()
+    private function setPrevNextNumber()
     {
         // difference until 0
         $diff = array(array(...$this->numbers));
@@ -108,14 +123,17 @@ class ReportLine
         }
 
         // prediction
+        $prev_number = 0;
         $next_number = 0;
         $l = count($diff);
         $i = $l - 1;
         while ($i >= 0) {
+            $prev_number = reset($diff[$i]) - $prev_number;
             $next_number+= end($diff[$i]);
             $i--;
         }
         
+        $this->prev_number = $prev_number;
         $this->next_number = $next_number;
     }
 
